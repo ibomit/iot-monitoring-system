@@ -227,7 +227,12 @@ The initial firmware test verifies that:
 - Serial communication works correctly
 The test program sends messages through the serial connection at ```115200``` baud.
 
+### End-to-End ESP32 Communication
 
+The ESP32 can connect to Wi-Fi and send sensor readings to the FastAPI backend using HTTP 
+
+### Data Flow
+ESP32 -> Wi-Fi -> FastApi -> PostgreSQL 
 
 ## 🗺️ Development Roadmap
 The project is being developed in the following stages:
