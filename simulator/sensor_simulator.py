@@ -14,7 +14,7 @@ while True:
     }
 
     try:
-        response = httpx.post("http://localhost:8000/sensor_readings", json = reading)
+        response = httpx.post("http://localhost:8000/api/readings", json = reading)
 
         #TODO: Add Logger
         print("Sent")

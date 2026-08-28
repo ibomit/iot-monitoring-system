@@ -25,8 +25,9 @@ ESP32 / Simulator
         ▼
    FastAPI Backend
         │
+        | SQLAlchemy
         ▼
-    Database
+PostgreSQL Database
         │
         ▼
  React Frontend
@@ -53,9 +54,9 @@ ESP32 / Simulator
 - FastAPI
 - Pydantic
 - uv
+- PostgreSQL
 
 ### Planned
-- PostgreSQL
 - React
 - JavaScript
 - ESP32
@@ -98,6 +99,7 @@ Example response:
 ```
 POST /api/readings
 ```
+Stores the reading in PostgreSQL.
 Example request:
 ```
 {
@@ -117,7 +119,28 @@ Example response:
     }
 }
 ```
-
+### Get Sensor Readings
+```
+GET /api/readings
+```
+Returns all sensor readings currently stored in the database.
+Example response:
+```
+[
+    {
+        "id": "simulator-001",
+        "temperature": 22.5,
+        "humidity": 48.0,
+        "created_at": "2026-08-28T20:00:00"
+    },
+    {
+        "id": "simulator-001",
+        "temperature": 24.5,
+        "humidity": 39.0,
+        "created_at": "2026-08-28T20:01:00"
+    },
+]
+```
 ## 🤖 Sensor Simulator
 A Python-based sensor simulator is used during development to simulate an IoT device before connecting the real ESP32 hardware.
 The simulator generates random sensor readings and sens them to the FastAPI backend every 5 seconds.
@@ -145,8 +168,36 @@ Sent: {'device_id': 'simulator-001', 'temperature': 24.31, 'humidity': 53.72}
 Server response: {'message': 'Reading received'}
 ```
 
-## 🗺️ Development Roadmap
 
+## 🗄️ Database
+The Project uses PostgreSQL to store sensor readings.
+PostgreSQL runs inside a Docker container.
+### Database Stack
+- PostgreSQL
+- Docker
+- SQLAlchemy
+- psycopg
+### Running the Database
+To run the database, start the docker container.
+``` docker compose up -d ```
+To stop the container you can run 
+``` docker compose down ```  
+Current development database configuration:
+```
+Database: iot_db
+Username: iot_user
+Password: iot_password
+Host: localhost
+Port: 5432
+```
+The current credentials are intended for local development only. Environment variables will be used for sensitive configuration in later stages of the project.
+
+
+
+
+
+
+## 🗺️ Development Roadmap
 The project is being developed in the following stages:
 
 - [x] Create GitHub repository
@@ -155,7 +206,7 @@ The project is being developed in the following stages:
 - [x] Create health check endpoint
 - [x] Create sensor readings API endpoint
 - [x] Create Python sensor simulator
-- [ ] Store sensor readings in a database
+- [X] Store sensor readings in a database
 - [ ] Connect ESP32 to the backend
 - [ ] Build React dashboard
 - [ ] Add room visualization
