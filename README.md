@@ -117,6 +117,34 @@ Example response:
     }
 }
 ```
+
+## 🤖 Sensor Simulator
+A Python-based sensor simulator is used during development to simulate an IoT device before connecting the real ESP32 hardware.
+The simulator generates random sensor readings and sens them to the FastAPI backend every 5 seconds.
+
+### Simulated Data
+The simulator currently generates: 
+- Temperature between 18°C and 30°C
+- Humidity between 30% and 70%
+- Device ID: `simulator-001`
+
+### Running the Simulator
+Make sure the FastAPI backend is running first:
+```
+cd backend
+uv run fastapi dev app/main.py
+```
+Then, in a separate terminal, run the simulator:
+```
+cd backend
+uv run python ../simulator/sensor_simulator.py
+```
+Example output:
+```
+Sent: {'device_id': 'simulator-001', 'temperature': 24.31, 'humidity': 53.72}
+Server response: {'message': 'Reading received'}
+```
+
 ## 🗺️ Development Roadmap
 
 The project is being developed in the following stages:
@@ -126,7 +154,7 @@ The project is being developed in the following stages:
 - [x] Set up FastAPI backend
 - [x] Create health check endpoint
 - [x] Create sensor readings API endpoint
-- [ ] Create Python sensor simulator
+- [x] Create Python sensor simulator
 - [ ] Store sensor readings in a database
 - [ ] Connect ESP32 to the backend
 - [ ] Build React dashboard
