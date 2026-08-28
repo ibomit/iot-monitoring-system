@@ -192,8 +192,40 @@ Port: 5432
 ```
 The current credentials are intended for local development only. Environment variables will be used for sensitive configuration in later stages of the project.
 
+## ⚙️ ESP32 Firmware
+The project includes firmware for an ESP32 microcontroller, located in the `firmware/` directory.
 
+The ESP32 firmware is developed using:
+- PlatformIO
+- Arduino framework
+- Espressif ESP32 platform
 
+### Hardware Setup
+The ESP32 development board is connected to the development machine via USB and is detected as: 
+```
+/dev/ttyUSB0
+```
+
+### Firmware Development
+The firmware project is configured as a PlatformIO project.
+
+Current configuration:
+```
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+monitor_speed = 115200
+upload_port = /dev/ttyUSB0
+monitor_port = /dev/ttyUSB0 
+```
+### First Firmware Test
+The initial firmware test verifies that:
+- PlatformIO can build the ESP32 firmware
+- Firmware can successfully be uploaded to the ESP32
+- Serial communication works correctly
+The test program sends messages through the serial connection at ```115200``` baud.
 
 
 
@@ -206,8 +238,8 @@ The project is being developed in the following stages:
 - [x] Create health check endpoint
 - [x] Create sensor readings API endpoint
 - [x] Create Python sensor simulator
-- [X] Store sensor readings in a database
-- [ ] Connect ESP32 to the backend
+- [x] Store sensor readings in a database
+- [x] Connect ESP32 to the backend
 - [ ] Build React dashboard
 - [ ] Add room visualization
 - [ ] Add movement detection visualization
