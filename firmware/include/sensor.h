@@ -4,11 +4,21 @@ struct SensorReading{
     float temperature;
     float humidity;
 };
+struct Measurement {
+    string metric;
+    float value;
+    string unit;
+};
+
 
 class Sensor {
 
 public:
-    virtual SensorReading read() = 0;
-    
     virtual ~Sensor() = default;
+    
+    virtual void read(
+        Measurement* measurements,
+        int& count
+    ) = 0
+    
 };

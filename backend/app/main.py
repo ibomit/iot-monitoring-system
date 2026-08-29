@@ -2,54 +2,63 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from app import models
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal
 
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
-
-class SensorReadingCreate(BaseModel):
-    device_id: str
-    temperature: float
-    humidity: float
+class MeasurementCreate(BaseModel):
+    metric: str
+    value: float
+    unit: str
+class MeasurementsCreate(BaseModel):
+    device_uid: str
+    measurements: list[MeasurementCreate]
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-@app.get("/api/readings")
-def get_readings():
+
+@app.get("/api/measurements")
+def get_measurements():
     db = SessionLocal()
     try:
-        readings = db.query(models.SensorReading).all()
-        
-        return readings
-        
+        measurements = db.query(models.Measurement).all()
+        return measurements
     finally:
         db.close()
 
-@app.post("/api/readings")
-def create_reading(reading: SensorReadingCreate):
+@app.post("/api/measurements")
+def create_measurements(data: MeasurementsCreate):
     db = SessionLocal()
 
     try:
-        db_reading = models.SensorReading(
-            device_id=reading.device_id,
-            temperature=reading.temperature,
-            humidity=reading.humidity
+        device = (
+            db.query(models.Device)
+            .filter(models.Device.device_uid == data.device_uid)
+            .first()
         )
-        db.add(db_reading)
-        db.commit()
-        db.refresh(db_reading)
         
-        return {
-            "message": "Reading saved",
-            "data": {
-                "id": db_reading.id,
-                "device_id": db_reading.device_id,
-                "temperature": db_reading.temperature,
-                "humidity": db_reading.humidity,
-                "created_at": db_reading.created_at
+        if device is None:
+            return {
+                "error": "Device not found"
             }
+        saved_measurements = []
+
+        for measurement in data.measurements:
+            db_measurement = models.Measurement(
+                device_id=device.id,
+                metric=measurement.metric,
+                value=measurement.value,
+                unit=measurement.unit
+            )
+            db.add(db_measurement)
+            saved_measurements.append(db_measurement)
+
+        db.commit()
+
+        return {
+            "message": "Measurements saved",
+            "count": len(saved_measurements)
         }
     finally:
         db.close()
