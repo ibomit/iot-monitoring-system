@@ -234,6 +234,20 @@ The ESP32 can connect to Wi-Fi and send sensor readings to the FastAPI backend u
 ### Data Flow
 ESP32 -> Wi-Fi -> FastApi -> PostgreSQL 
 
+### Communication 
+The ESP32 sends readings using an HTTP `POST` request to: 
+``` 
+POST /api/readings
+```
+the backend validates the data and stores the reading in PostgreSQL
+### Current ESP32 Features
+- [x] Wi-Fi connection
+- [x] HTTP communication with FastAPI
+- [x] Random simulated temperature readings
+- [x] Random simulated humidity readings
+- [x] Periodic readings every 3 seconds
+- [x] Data successfully stored in PostgreSQL
+
 ## 🗺️ Development Roadmap
 The project is being developed in the following stages:
 
