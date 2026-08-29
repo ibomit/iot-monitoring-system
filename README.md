@@ -240,6 +240,30 @@ The ESP32 sends readings using an HTTP `POST` request to:
 POST /api/readings
 ```
 the backend validates the data and stores the reading in PostgreSQL
+
+### Firmware Architecture
+The ESP32 firmware is structured using an abstract sensor interface. 
+```
+Sensor
+├── FakeSensor
+└── Future sensor implementations
+```
+### Sensor Interface
+The `Sensor` interface defines a common contract for sensor implementations:
+```
+class Sensor {
+public:
+    virtual SensorReading read() = 0; 
+    virtual ~Sensor() = default;
+}
+```
+Sensor implementations return a SensorReading containing the collected values
+
+### FakeSensor
+The current `FakeSensor` implementation generates simulated temperature and humidity readings. 
+This allows the system to be tested without requiring a physical sensor. 
+Future implementations can replace FakeSensor without changing the main application logic. 
+
 ### Current ESP32 Features
 - [x] Wi-Fi connection
 - [x] HTTP communication with FastAPI

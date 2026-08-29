@@ -3,14 +3,18 @@
 #include <HTTPClient.h>
 
 #include "secrets.h"
+#include "fake_sensor.h"
+
+FakeSensor sensor;
 
 const char* SERVER_URL = "http://192.168.178.20:8000/api/readings";
 
 void send_fake_sensor_readings();
 
+
 void setup() {
     Serial.begin(115200);
-
+    
     // Seed the Arduino random number generator
     randomSeed(esp_random());
 
@@ -38,15 +42,14 @@ void loop() {
 }
 
 void send_fake_sensor_readings() {
-    // Generate fake sensor readings
-    float random_temperature = random(200, 300) / 10.0;
-    float random_humidity = random(400, 500) / 10.0;
+
+    SensorReading reading = sensor.read();
 
     // Create JSON payload
     String json =
         "{\"device_id\":\"esp32-001\","
-        "\"temperature\":" + String(random_temperature, 1) + ","
-        "\"humidity\":" + String(random_humidity, 1) + "}";
+        "\"temperature\":" + String(reading.temperature, 1) + ","
+        "\"humidity\":" + String(reading.humidity, 1) + "}";
 
     // Create HTTP client
     HTTPClient http;
@@ -59,10 +62,10 @@ void send_fake_sensor_readings() {
 
     Serial.println();
     Serial.print("Temperature: ");
-    Serial.println(random_temperature);
+    Serial.println(reading.temperature);
 
     Serial.print("Humidity: ");
-    Serial.println(random_humidity);
+    Serial.println(reading.humidity);
 
     Serial.print("HTTP response code: ");
     Serial.println(httpResponseCode);
