@@ -60,49 +60,81 @@ The planned architecture is:
 
 ## 📁 Project Structure
 
-```iot-monitoring-system/
-│
+## 📁 Project Structure
+
+```text
 iot-monitoring-system/
 │
-├── backend/                   # FastAPI backend application
+├── backend/                         # FastAPI backend application
 │   │
 │   ├── app/
-│   │   ├── routers/           # API routers
+│   │   │
+│   │   ├── routers/                 # API routers
+│   │   │   ├── auth.py
 │   │   │   ├── devices.py
 │   │   │   ├── sensors.py
 │   │   │   └── measurements.py
 │   │   │
-│   │   ├── schemas/           # Pydantic request/response schemas
+│   │   ├── schemas/                 # Pydantic request/response schemas
 │   │   │   ├── device.py
 │   │   │   ├── sensor.py
-│   │   │   └── measurement.py
+│   │   │   ├── measurement.py
+│   │   │   └── user.py
 │   │   │
-│   │   ├── database.py        # Database configuration
-│   │   ├── models.py          # SQLAlchemy models
-│   │   └── main.py            # FastAPI application
+│   │   ├── services/                # Business logic
+│   │   │   ├── device_service.py
+│   │   │   ├── sensor_service.py
+│   │   │   ├── measurement_service.py
+│   │   │   └── user_service.py
+│   │   │
+│   │   ├── auth.py                  # Authentication dependencies
+│   │   ├── security.py              # Password hashing and JWT
+│   │   ├── dependencies.py          # Shared dependencies
+│   │   ├── database.py              # Database configuration
+│   │   ├── models.py                # SQLAlchemy models
+│   │   └── main.py                  # FastAPI application
 │   │
-│   ├── alembic/               # Database migrations
-│   └── pyproject.toml
+│   ├── alembic/                     # Database migrations
+│   │   ├── versions/
+│   │   └── env.py
+│   │
+│   ├── pyproject.toml
+│   └── uv.lock
 │
-├── firmware/                  # ESP32 firmware
+├── firmware/                        # ESP32 firmware
+│   │
 │   ├── include/
-│   └── src/
-│       ├── sensors/
-│       ├── network/
-│       └── main.cpp
+│   │   └── secrets.h                # Wi-Fi credentials and sensitive configuration
+│   │
+│   ├── src/
+│   │   │
+│   │   ├── network/
+│   │   │   ├── ApiClient.h          # HTTP communication with backend
+│   │   │   └── ApiClient.cpp
+│   │   │
+│   │   ├── sensors/
+│   │   │   ├── Sensor.h             # Abstract sensor interface
+│   │   │   ├── FakeDHTSensor.h
+│   │   │   ├── FakeDHTSensor.cpp
+│   │   │   ├── FakeDistanceSensor.h
+│   │   │   └── FakeDistanceSensor.cpp
+│   │   │
+│   │   ├── Measurement.h            # Measurement data structure
+│   │   └── main.cpp                 # Main ESP32 application
+│   │
+│   ├── platformio.ini
+│   └── .gitignore
 │
-├── frontend/                  # React dashboard
+├── simulator/                       # Python sensor simulator
+│   └── sensor_simulator.py
 │
-├── simulator/                 # Sensor simulator
+├── frontend/                        # React dashboard (planned)
 │
-├── docs/                      # Project documentation
+├── docs/                            # Project documentation
 │
-├── docker-compose.yml
-│
+├── docker-compose.yml               # PostgreSQL Docker configuration
 ├── README.md
-│
 └── .gitignore
-```
 ## 🛠️ Tech Stack
 
 ### Backend
@@ -152,6 +184,7 @@ http://127.0.0.1:8000/docs
 ```
 The API is organized into the following Swagger groups:
 - Health
+- Authentication
 - Devices
 - Sensors
 - Measurements
@@ -163,7 +196,26 @@ The `/docs` page contains the complete and up-to-date API reference, including:
 - Validation rules
 - Interactive API testing
 
+## 🔐 Authentication
 
+The backend includes user authentication using JWT (JSON Web Tokens).
+
+Current authentication features:
+
+- User registration
+- Password hashing
+- User login
+- JWT access tokens
+- Current user authentication
+- Role-based authorization
+- Admin role support
+
+Authentication endpoints are available under:
+
+```text
+/api/auth
+``` 
+Authentication and authorization are implemented and tested, while IoT API endpoints remain public during development.
 ## 🤖 Sensor Simulator
 
 The project includes a Python-based sensor simulator for testing the backend without physical ESP32 hardware.
@@ -191,6 +243,7 @@ uv run python simulator/sensor_simulator.py
 ```
 ## 🗄️ Database
 The project uses PostgreSQL to store: 
+- Users
 - Devices
 - Sensors
 - Measurements
@@ -463,6 +516,10 @@ The project is being developed in the following stages:
 - [x] Configure FastAPI
 - [x] Configure SQLAlchemy
 - [x] Configure Alembic
+- [x] Add user model
+- [x] Add authentication API
+- [x] Add JWT authentication
+- [x] Add role-based authorization
 
 ### Backend
 - [x] Create FastAPI application
@@ -508,11 +565,16 @@ The project is being developed in the following stages:
 - [ ] Add device configuration interface
 
 ### Security
-- [ ] Authentication
-- [ ] User accounts
-- [ ] Admin role
-- [ ] Device Authentication
-- [ ] API authorization
+
+- [x] User authentication
+- [x] User accounts
+- [x] Password hashing
+- [x] JWT authentication
+- [x] Current user authentication
+- [x] Admin role support
+- [x] Role-based authorization
+- [ ] Device authentication
+- [ ] API authorization for IoT devices
 - [ ] Secure device registration
 
 ## 📈 Current Status
@@ -536,7 +598,9 @@ Multiple sensors can belong to a single ESP32 device, and each sensor can submit
 
 The backend validates the relationship between devices and sensors before storing measurements.
 
-The next major step is to continue improving the backend architecture and begin building the React dashboard and admin functionality.
+The backend and ESP32 firmware are communicating successfully, and the backend now includes JWT-based user authentication and role-based authorization.
+
+The next major step is to begin building the React dashboard.
 
 ## 👨‍💻 Author
 

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from app import models
 from app.database import SessionLocal
-from app.routers import devices, sensors, measurements
+from app.routers import devices, measurements, sensors, auth
 
 tags_metadata = [
     {
@@ -35,7 +35,7 @@ app = FastAPI(
 app.include_router(devices.router)
 app.include_router(sensors.router)
 app.include_router(measurements.router)
-
+app.include_router(auth.router)
 
 @app.get("/health", tags=["Health"])
 def health():
