@@ -4,9 +4,10 @@
 #include <Arduino.h>
 
 struct Measurement {
-    String metric;
+    const char* sensorUid;
+    const char* metric;
     float value;
-    String unit;
+    const char* unit;
 };
 
 #endif

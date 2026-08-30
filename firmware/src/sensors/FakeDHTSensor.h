@@ -4,11 +4,15 @@
 #include "Sensor.h"
 
 class FakeDHTSensor : public Sensor {
-    public:
-    void read(
-        Measurement* measurements,
-        int& count
-    ) override; 
+public:
+    FakeDHTSensor(
+        const char* sensorUid,
+        const char* name    
+    );
+
+    int read(
+        Measurement* measurements
+    ) override;
 };
 
 #endif

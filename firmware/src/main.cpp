@@ -4,13 +4,24 @@
 #include "secrets.h"
 #include "Measurement.h"
 #include "sensors/FakeDHTSensor.h"
+#include "sensors/FakeDistanceSensor.h"
 #include "network/ApiClient.h"
 
-const char* SERVER_URL = "http://192.168.178.20:8000/api/measurements";
+const char* SERVER_URL = 
+    "http://192.168.178.20:8000";
 
-const char* DEVICE_UID = "esp32-001";
+const char* DEVICE_UID = 
+    "esp32-001";
 
-FakeDHTSensor sensor;
+FakeDHTSensor dhtSensor(
+    "fake-dht-001",
+    "DHT Sensor"
+);
+
+FakeDistanceSensor distanceSensor(
+    "fake_distance-001",
+    "Distance Sensor"
+);
 
 ApiClient apiClient(
     SERVER_URL,
@@ -25,7 +36,10 @@ void setup() {
     randomSeed(esp_random());
 
     // Connect to Wi-Fi
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.begin(
+        WIFI_SSID,
+        WIFI_PASSWORD
+    );
 
     Serial.println("Connecting to Wi-Fi...");
 
@@ -36,21 +50,35 @@ void setup() {
 
     Serial.println();
     Serial.println("Wi-Fi connected!");
+    
     Serial.print("ESP32 IP address: ");
     Serial.println(WiFi.localIP());
+    
+    // Register sensors
+
+    apiClient.registerSensor(
+        dhtSensor
+    );
+    
+    apiClient.registerSensor(
+        distanceSensor
+    );
 }
 
 void loop() {
- Measurement measurements[10];
+    Measurement measurements[10];
     int count = 0;
 
-    sensor.read(
-        measurements,
-        count
+    count += dhtSensor.read(
+        measurements + count
     );
 
+    count += distanceSensor.read(
+        measurements + count
+    );
+    
     apiClient.sendMeasurements(
-        measurements,
+        measurements, 
         count
     );
 
