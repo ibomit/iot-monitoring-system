@@ -1,55 +1,45 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from app import models
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal
+from app.routers import devices, sensors, measurements
 
-app = FastAPI()
+tags_metadata = [
+    {
+        "name": "Health",
+        "description": "API health and status endpoints."
+    },
+    {
+        "name": "Devices",
+        "description": "Manage IoT devices."
+    },
+    {
+        "name": "Sensors",
+        "description": "Register and manage sensors connected to devices."
+    },
+    {
+        "name": "Measurements",
+        "description": "Create and retrieve sensor measurements."
+    }
+]
 
-Base.metadata.create_all(bind=engine)
 
-class SensorReadingCreate(BaseModel):
-    device_id: str
-    temperature: float
-    humidity: float
+app = FastAPI(
+    title="IoT Monitoring System API",
+    description="Backend API for managing IoT devices, sensors and measurements.",
+    version="1.0.0",
+    openapi_tags=tags_metadata
+)
 
-@app.get("/health")
+app.include_router(devices.router)
+app.include_router(sensors.router)
+app.include_router(measurements.router)
+
+
+@app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok"}
-@app.get("/api/readings")
-def get_readings():
-    db = SessionLocal()
-    try:
-        readings = db.query(models.SensorReading).all()
-        
-        return readings
-        
-    finally:
-        db.close()
+    return {
+        "status": "ok"
+    }
 
-@app.post("/api/readings")
-def create_reading(reading: SensorReadingCreate):
-    db = SessionLocal()
-
-    try:
-        db_reading = models.SensorReading(
-            device_id=reading.device_id,
-            temperature=reading.temperature,
-            humidity=reading.humidity
-        )
-        db.add(db_reading)
-        db.commit()
-        db.refresh(db_reading)
-        
-        return {
-            "message": "Reading saved",
-            "data": {
-                "id": db_reading.id,
-                "device_id": db_reading.device_id,
-                "temperature": db_reading.temperature,
-                "humidity": db_reading.humidity,
-                "created_at": db_reading.created_at
-            }
-        }
-    finally:
-        db.close()
