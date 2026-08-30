@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
+from app.auth import AdminUser
 from app.dependencies import DbSession
 from app.schemas.device import DeviceCreate, DeviceDashboardResponse, DeviceResponse
 from app.schemas.measurement import MeasurementResponse
@@ -30,6 +31,7 @@ def get_devices(
 def create_device(
     data: DeviceCreate,
     db: DbSession,
+    current_user: AdminUser,
 ):
     device = device_service.create_device(
         db,
