@@ -12,7 +12,6 @@ class Device(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
-
     device_uid: Mapped[str] = mapped_column(
         String(100),
         unique=True,
