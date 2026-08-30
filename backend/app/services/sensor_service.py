@@ -1,21 +1,25 @@
+from datetime import datetime
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
 from app.schemas.sensor import SensorRegister
 
 
-def get_sensors(db: Session):
-
-    return db.query(
-        models.Sensor
-    ).all()
+def get_sensors(
+    db: Session,
+):
+    return (
+        db.query(models.Sensor)
+        .all()
+    )
 
 
 def get_sensor_by_uid(
     db: Session,
-    sensor_uid: str
-):
-
+    sensor_uid: str,
+) -> models.Sensor | None:
     return (
         db.query(models.Sensor)
         .filter(
@@ -25,11 +29,89 @@ def get_sensor_by_uid(
     )
 
 
+def get_sensor_measurements(
+    db: Session,
+    sensor_id: int,
+    limit: int = 100,
+    start: datetime | None = None,
+    end: datetime | None = None
+):
+    query = (
+        db.query(models.Measurement)
+        .filter(
+            models.Measurement.sensor_id == sensor_id
+        )
+    )
+
+    if start is not None:
+        query = query.filter(
+            models.Measurement.created_at >= start
+        )
+    
+    if end is not None:
+        query = query.filter(
+            models.Measurement.created_at <= end
+        )
+
+    return (
+        query
+        .order_by(
+            models.Measurement.created_at.desc()
+        )
+        .limit(limit)
+        .all()
+    )
+
+def get_latest_measurements(
+    db: Session,
+    sensor_id: int,
+):
+    latest_measurements = (
+        db.query(
+            models.Measurement.metric,
+            func.max(
+                models.Measurement.created_at
+            ).label(
+                "latest_created_at"
+            ),
+        )
+        .filter(
+            models.Measurement.sensor_id == sensor_id
+        )
+        .group_by(
+            models.Measurement.metric
+        )
+        .subquery()
+    )
+
+    return (
+        db.query(models.Measurement)
+        .join(
+            latest_measurements,
+            (
+                models.Measurement.metric
+                == latest_measurements.c.metric
+            )
+            &
+            (
+                models.Measurement.created_at
+                == latest_measurements.c.latest_created_at
+            ),
+        )
+        .filter(
+            models.Measurement.sensor_id == sensor_id
+        )
+        .order_by(
+            models.Measurement.metric
+        )
+        .all()
+    )
+
+
 def register_sensor(
     db: Session,
-    data: SensorRegister
+    data: SensorRegister,
 ):
-
     # Find device
     device = (
         db.query(models.Device)
@@ -45,17 +127,16 @@ def register_sensor(
     # Find sensor
     sensor = get_sensor_by_uid(
         db,
-        data.sensor_uid
+        data.sensor_uid,
     )
 
     # Sensor doesn't exist -> create it
     if sensor is None:
-
         sensor = models.Sensor(
             sensor_uid=data.sensor_uid,
             name=data.name,
             sensor_type=data.sensor_type,
-            device_id=device.id
+            device_id=device.id,
         )
 
         db.add(sensor)
@@ -66,7 +147,6 @@ def register_sensor(
 
     # Sensor exists but belongs to another device
     if sensor.device_id != device.id:
-
         return sensor, "wrong_device"
 
     # Sensor already exists on this device
