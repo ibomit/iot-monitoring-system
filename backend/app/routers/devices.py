@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.auth import AdminUser
+from app.auth import AdminUser, CurrentUser
 from app.dependencies import DbSession
 from app.schemas.device import DeviceCreate, DeviceDashboardResponse, DeviceResponse
 from app.schemas.measurement import MeasurementResponse
@@ -19,6 +19,7 @@ router = APIRouter(
 )
 def get_devices(
     db: DbSession,
+    # current_user: CurrentUser
 ):
     return device_service.get_devices(db)
 
@@ -31,7 +32,6 @@ def get_devices(
 def create_device(
     data: DeviceCreate,
     db: DbSession,
-    current_user: AdminUser,
 ):
     device = device_service.create_device(
         db,
@@ -48,11 +48,12 @@ def create_device(
 
 @router.get(
     "/{device_uid}/dashboard",
-    response_model=DeviceDashboardResponse
+    response_model=DeviceDashboardResponse,
 )
 def get_device_dashboard(
     device_uid: str,
     db: DbSession,
+    # current_user: CurrentUser
 ):
     device = device_service.get_device_by_uid(
         db=db,
@@ -76,6 +77,7 @@ def get_device_dashboard(
 def get_device_sensors(
     device_uid: str,
     db: DbSession,
+    # # current_user: CurrentUser
 ):
     device = device_service.get_device_by_uid(
         db,
@@ -98,6 +100,7 @@ def get_device_sensors(
 def get_latest_device_measurements(
     device_uid: str,
     db: DbSession,
+    # # current_user: CurrentUser
 ):
     device = device_service.get_device_by_uid(
         db=db,
@@ -123,6 +126,7 @@ def get_latest_device_measurements(
 def get_device(
     device_uid: str,
     db: DbSession,
+    # # current_user: CurrentUser
 ):
     device = device_service.get_device_by_uid(
         db,

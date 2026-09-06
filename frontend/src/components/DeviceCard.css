@@ -1,0 +1,19 @@
+.device-card {
+  width: 100%;
+  padding: 1.5rem;
+  text-align: start;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+.device-card:hover{
+  transform: translateY(-0.5rem);
+  box-shadow: 0rem 10px 25px rgb(0 0 0 / 20%);
+}
+.device-card h3{
+  margin-block: 0 1rem;
+}
