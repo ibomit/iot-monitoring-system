@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getDeviceDashboard,
   type Device,
-} from '../api/api'
+} from '../services/api'
 
 interface DeviceDashboardProps {
   device: Device

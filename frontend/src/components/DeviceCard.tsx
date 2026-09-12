@@ -1,4 +1,4 @@
-import type { Device } from '../api/api'
+import type { Device } from '../services/api'
 import './DeviceCard.css'
 
 
@@ -6,6 +6,7 @@ interface DeviceCardProps {
     device: Device
     onClick: () => void
 }
+// TODO: Add OnClick handler
 
 function DeviceCard({
     device,

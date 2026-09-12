@@ -1,9 +1,11 @@
 import './App.css'
-import Devices from './pages/Devices'
+import NavBar from './components/NavBar'
+import Devices from './pages/DevicesPage'
 
 function App(){
     return (
             <div>
+                <NavBar/>
                 <Devices/>
             </div>
     )
