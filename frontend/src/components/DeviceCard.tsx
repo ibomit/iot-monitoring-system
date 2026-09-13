@@ -1,31 +1,35 @@
-import type { Device } from '../services/api'
+import type { IDevice } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+import { 
+    Card,
+    CardHeader
+ } from "@/components/ui/card"
 import './DeviceCard.css'
 
 
 interface DeviceCardProps {
-    device: Device
-    onClick: () => void
+    device: IDevice
 }
-// TODO: Add OnClick handler
 
 function DeviceCard({
-    device,
-    onClick
+    device
 }: DeviceCardProps) {
+    const navigate = useNavigate()
     return (
-        <button
-            type="button"
-            className="device-card"
-            onClick={onClick}
-        >
-            <h3>{device.name}</h3>
-            <p>
-                <strong>Device:</strong>{device.name}
-            </p>
-            <p>
-                <strong>Location:</strong>{device.location}
-            </p>
-        </button>
+            <button
+                type="button"
+                className="device-card"
+                onClick={() => navigate(`/devices/${device.device_uid}`)}
+                >
+                <h3>{device.name}</h3>
+                <p>
+                    <strong>Device:</strong>{device.name}
+                </p>
+                <p>
+                    <strong>Location:</strong>{device.location}
+                </p>
+            </button>
+
     )
 }
 

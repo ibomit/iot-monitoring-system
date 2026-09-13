@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
-import { getDevices, type Device } from "../services/api"
+import { getDevices, type IDevice } from "../services/api"
 
 import DeviceCard from "../components/DeviceCard"
 import './DevicesPage.css'
 interface DevicesTableProps {
-    devices: Device[],
+    devices: IDevice[],
     error: string | null,
     loading: boolean
 }
 
 function Devices() {
 
-    const [devices, setDevices] = useState<Device[]>([]);
+    const [devices, setDevices] = useState<IDevice[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('')
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true)
@@ -50,7 +50,7 @@ function Devices() {
                         Devices
                     </h1>
                     <p>
-                        List of all devices
+                        List of all deviceDeviceDashboards
                     </p>
                 </div>
             </div>
@@ -92,7 +92,7 @@ function DevicesTable({ devices, error, loading }: DevicesTableProps) {
                         <DeviceCard
                             key={device.id}
                             device={device}
-                            onClick={() => { }}
+                            // onClick={() => { }}
                         />
                     ))}
                 </div>
