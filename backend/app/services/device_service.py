@@ -196,6 +196,8 @@ def get_device_dashboard(
         "device_uid": device.device_uid,
         "name": device.name,
         "location": device.location,
+        "last_seen_at": device.last_seen_at,
+        "status": device.status,
         "sensors": sensors,
     }
 

@@ -1,35 +1,110 @@
 .device-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 248px;
   width: 100%;
-  padding: 1.5rem;
+  padding: 1.2rem;
   text-align: start;
   color: inherit;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  background: var(--color-surface, white);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.9rem;
+  cursor: pointer;
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease;
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
-.device-card:hover{
-  transform: translateY(-0.5rem);
-  box-shadow: 0rem 10px 25px rgb(0 0 0 / 20%);
+
+.device-card:hover {
+  transform: translateY(-3px);
+  border-color: #93c5fd;
+  box-shadow: 0 14px 28px rgb(15 23 42 / 10%);
 }
+
+.device-card:focus-visible {
+  outline: 3px solid rgb(59 130 246 / 35%);
+  outline-offset: 3px;
+}
+
+.device-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.25rem;
+}
+
+.device-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.device-status span {
+  width: 0.4rem;
+  height: 0.4rem;
+  background: #10b981;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgb(16 185 129 / 14%);
+}
+
+.device-status.status-offline {
+  color: #b45309;
+}
+
+.device-status.status-offline span {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgb(245 158 11 / 14%);
+}
+
+.device-status.status-unknown {
+  color: #64748b;
+}
+
+.device-status.status-unknown span {
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgb(148 163 184 / 14%);
+}
+
+.device-card-arrow {
+  width: 1rem;
+  color: #94a3b8;
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.device-card:hover .device-card-arrow {
+  color: #2563eb;
+  transform: translateX(3px);
+}
+
 .device-card-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  margin-top: 1.1rem;
 }
 
 .device-card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.9rem;
+  height: 2.9rem;
   flex-shrink: 0;
-  border-radius: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--color-muted);
+  color: #2563eb;
+  background: #dbeafe;
+  border-radius: 0.8rem;
+}
+
+.device-card-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .device-card-title {
@@ -37,27 +112,69 @@
 }
 
 .device-card-title h3 {
+  overflow: hidden;
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.device-card-title p {
-  margin: 0.2rem 0 0; 
-  font-size: 1rem; 
-  color: var(--color-muted-foreground);
+
+.device-card-title span {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.2rem;
+  color: var(--color-text-muted, #64748b);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.device-card-info{
-  margin-top: 1rem;
-  font-size: 1rem;
-  color: var(--color-secondary-foreground);
+
+.device-card-info {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.35rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.82rem;
 }
-.device-card-footer{
+
+.device-card-info p {
   display: flex;
-  justify-content: space-between;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: var(--color-muted-foreground);
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
 }
-.device-card h3{
-  margin-block: 0 1rem;
+
+.device-card-info svg {
+  width: 0.95rem;
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.device-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1.1rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.75rem;
+  text-align: start;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+.device-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #2563eb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.device-card-action svg {
+  width: 0.8rem;
 }

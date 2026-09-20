@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { createDevice, deleteDevice, getDevices, type DeviceDeleteResponse, type IDevice } from "../services/api"
+import { MapPin, Plus, RefreshCw, Search, Server, Wifi } from 'lucide-react'
+import { createDevice, getDevices, type IDevice } from "../services/api"
 import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
 import {
     Dialog,
     DialogClose,
@@ -23,7 +23,8 @@ import { Input } from '@/components/ui/input'
 interface DevicesTableProps {
     devices: IDevice[],
     error: string | null,
-    loading: boolean
+    loading: boolean,
+    hasSearchQuery: boolean
 }
 
 function Devices() {
@@ -39,10 +40,6 @@ function Devices() {
             .includes(searchQuery.toLowerCase())
     )
 
-    useEffect(() => {
-        loadDevices()
-    }, [])
-
     async function loadDevices() {
         setLoading(true)
         try {
@@ -57,6 +54,34 @@ function Devices() {
         }
     }
 
+    useEffect(() => {
+        let cancelled = false
+
+        async function loadInitialDevices() {
+            try {
+                const data = await getDevices()
+                if (!cancelled) {
+                    setDevices(data)
+                    setError(null)
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setError('Failed to load devices...')
+                    console.log(err)
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        void loadInitialDevices()
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
     async function handleAddDeviceSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
         console.log("Form submitted")
@@ -69,12 +94,11 @@ function Devices() {
         console.log('Adding device:', { device_name, device_uid, device_location })
 
         try {
-            const response = await createDevice(
+            await createDevice(
                 device_name,
                 device_uid,
                 device_location
             )
-            console.log('Response:', { response })
             toast.add({
                 title: "Device Added",
                 description: `Device ${device_name} has been added successfully.`,
@@ -105,33 +129,60 @@ function Devices() {
     await loadDevices()
 }
 
-async function handleDeleteDevice(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const deviceUid = formData.get('device_uid') as string
-    console.log('Deleting device:', { deviceUid })
-    const response: Promise<DeviceDeleteResponse> = deleteDevice(deviceUid)
-    console.log('Response:', { response })
-}
+// async function handleDeleteDevice(event: React.SubmitEvent<HTMLFormElement>) {
+//     event.preventDefault()
+//     const formData = new FormData(event.currentTarget)
+//     const deviceUid = formData.get('device_uid') as string
+//     console.log('Deleting device:', { deviceUid })
+//     const response: Promise<DeviceDeleteResponse> = deleteDevice(deviceUid)
+//     console.log('Response:', { response })
+// }
 
 return (
-    <div>
-        <div className="devices-header">
+    <div className="devices-page">
+        <section className="devices-hero">
             <div>
-
-                <h1>
-                    Devices
-                </h1>
-                <p>
-                    List of all registered devices
-                </p>
+                <p className="eyebrow">Fleet overview</p>
+                <h1>Devices</h1>
+                <p className="devices-description">Monitor and manage every registered device from one place.</p>
             </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 md:flex-row">
-            {/* <Button onClick={() => { window.location.href = '/register-device' }}> */}
-            {/* <ButtonGroup> */}
+            <div className="devices-hero-mark" aria-hidden="true">
+                <Wifi />
+            </div>
+        </section>
+
+        <section className="device-stats" aria-label="Device summary">
+            <div className="stat-card">
+                <span className="stat-icon stat-icon-blue"><Server /></span>
+                <div><span className="stat-label">Total devices</span><strong>{devices.length}</strong></div>
+            </div>
+            <div className="stat-card">
+                <span className="stat-icon stat-icon-green"><Wifi /></span>
+                <div><span className="stat-label">Online devices</span><strong>{devices.filter((device) => device.status === 'online').length}</strong></div>
+            </div>
+            <div className="stat-card">
+                <span className="stat-icon stat-icon-amber"><MapPin /></span>
+                <div><span className="stat-label">Locations</span><strong>{new Set(devices.map((device) => device.location)).size}</strong></div>
+            </div>
+        </section>
+
+        <section className="devices-toolbar" aria-label="Device controls">
+            <div className="device-search">
+                <Search className="device-search-icon" aria-hidden="true" />
+                <input
+                    type="search"
+                    placeholder="Search devices..."
+                    aria-label="Search devices"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+            <div className="device-actions">
+                <Button variant="outline" size="icon" onClick={() => void loadDevices()} disabled={loading} aria-label="Refresh devices" title="Refresh devices">
+                    <RefreshCw className={loading ? 'animate-spin' : ''} />
+                </Button>
             <Dialog>
-                <DialogTrigger render={<Button>Add Device</Button>} />
+                    <DialogTrigger render={<Button><Plus /> Add device</Button>} />
                 <DialogContent className="sm:max-w-sm">
                     <form onSubmit={handleAddDeviceSubmit}>
                         <DialogHeader>
@@ -162,36 +213,52 @@ return (
                     </form >
                 </DialogContent>
             </Dialog>
-        </div>
-        <div className=''>
-            <input
-                type="text"
-                placeholder="Search for a device..."
-                className="search-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-            />
-        </div>
-        <main className="main">
-            <div>
+            </div>
+        </section>
+
+        <section className="devices-section" aria-labelledby="device-list-heading">
+            <div className="section-heading">
+                <div>
+                    <h2 id="device-list-heading">Your devices</h2>
+                    <p>{filteredDevices.length} of {devices.length} devices shown</p>
+                </div>
+            </div>
                 <DevicesTable
                     devices={filteredDevices}
                     error={error}
-                    loading={loading} />
-            </div>
-        </main>
-
-
+                    loading={loading}
+                    hasSearchQuery={searchQuery.trim().length > 0} />
+        </section>
     </div>
 )
 }
 
-function DevicesTable({ devices, error, loading }: DevicesTableProps) {
+function DevicesTable({ devices, error, loading, hasSearchQuery }: DevicesTableProps) {
     return (
         <>
-            {error && <div className="error-message">{error}</div>}
+            {error && (
+                <div className="device-state error-message" role="alert">
+                    <p>{error}</p>
+                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Try again</Button>
+                </div>
+            )}
             {loading ? (
-                <div className="loading">Loading...</div>
+                <div className="device-state loading" aria-live="polite">
+                    <RefreshCw className="animate-spin" />
+                    <p>Loading your devices...</p>
+                </div>
+            ) : devices.length === 0 && !hasSearchQuery && !error ? (
+                <div className="device-state empty-state">
+                    <Server />
+                    <h3>No devices yet</h3>
+                    <p>Add your first device to start monitoring your fleet.</p>
+                </div>
+            ) : devices.length === 0 && hasSearchQuery ? (
+                <div className="device-state empty-state">
+                    <Search />
+                    <h3>No matches found</h3>
+                    <p>Try a different device name or clear your search.</p>
+                </div>
             ) : (
                 <div className="devices-grid">
                     {devices.map((device) => (

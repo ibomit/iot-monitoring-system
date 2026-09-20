@@ -4,7 +4,11 @@ export interface IDevice {
     name: string
     location: string
     created_at: string
+    last_seen_at: string | null
+    status: DeviceStatus
 }
+
+export type DeviceStatus = 'online' | 'offline' | 'unknown'
 export interface ISensor {
     sensor_uid: string
     name: string
@@ -24,6 +28,8 @@ export interface IDeviceDashboard {
     device_uid: string
     name: string
     location: string
+    last_seen_at: string | null
+    status: DeviceStatus
     sensors: ISensor[]
 }
 export interface DeviceDeleteResponse {
@@ -36,6 +42,18 @@ const API_BASE_URL = 'http://localhost:8000'
 export function getApiBaseUrl(): string {
     return API_BASE_URL
 }
+
+export async function checkApiHealth(): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`, {
+            cache: 'no-store',
+        })
+        return response.ok
+    } catch {
+        return false
+    }
+}
+
 export async function getDevices(): Promise<IDevice[]> {
     const response = await fetch(`${API_BASE_URL}/api/devices`)
     if (!response.ok) {

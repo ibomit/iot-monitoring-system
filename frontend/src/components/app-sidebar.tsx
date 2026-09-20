@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react"
 import {
-  ChevronRight,
   LayoutGrid,
   RadioTower,
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { checkApiHealth } from "@/services/api"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +29,33 @@ const navigation = [
 ]
 
 export function AppSidebar() {
+  const [apiStatus, setApiStatus] = useState<"checking" | "connected" | "unavailable">("checking")
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function updateApiStatus() {
+      const isHealthy = await checkApiHealth()
+      if (!cancelled) {
+        setApiStatus(isHealthy ? "connected" : "unavailable")
+      }
+    }
+
+    void updateApiStatus()
+    const intervalId = window.setInterval(updateApiStatus, 10000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  const statusCopy = {
+    checking: { title: "Checking API", detail: "Connecting..." },
+    connected: { title: "All systems operational", detail: "API connected" },
+    unavailable: { title: "API unavailable", detail: "Connection failed" },
+  }[apiStatus]
+
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border/70">
       <SidebarHeader className="border-b border-sidebar-border/70 px-3 py-4">
@@ -59,13 +88,15 @@ export function AppSidebar() {
 
       <SidebarSeparator />
       <SidebarFooter className="p-3">
+        <div className="mb-2 flex justify-end group-data-[collapsible=icon]:justify-center">
+          <ThemeToggle />
+        </div>
         <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent/60 px-3 py-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-          <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_color-mix(in_oklab,_#10b981_20%,_transparent)]" />
+          <span className={`size-2 rounded-full ${apiStatus === "connected" ? "bg-emerald-500 shadow-[0_0_0_3px_color-mix(in_oklab,_#10b981_20%,_transparent)]" : apiStatus === "unavailable" ? "bg-red-500 shadow-[0_0_0_3px_color-mix(in_oklab,_#ef4444_20%,_transparent)]" : "bg-amber-500 shadow-[0_0_0_3px_color-mix(in_oklab,_#f59e0b_20%,_transparent)]"}`} />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-xs font-medium">All systems operational</p>
-            <p className="text-[11px] text-sidebar-foreground/60">API connected</p>
+            <p className="text-xs font-medium">{statusCopy.title}</p>
+            <p className="text-[11px] text-sidebar-foreground/60">{statusCopy.detail}</p>
           </div>
-          <ChevronRight className="ml-auto size-3.5 text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden" />
         </div>
       </SidebarFooter>
       <SidebarRail />

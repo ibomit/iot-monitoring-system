@@ -28,14 +28,21 @@ ApiClient apiClient(
     DEVICE_UID
 );
 
+const unsigned long MEASUREMENT_INTERVAL_MS = 3000;
+const unsigned long MAX_RETRY_DELAY_MS = 60000;
+const int MAX_MEASUREMENTS_PER_BATCH = 10;
 
-void setup() {
-    Serial.begin(115200);
-    
-    // Seed the Arduino random number generator
-    randomSeed(esp_random());
+unsigned long nextMeasurementAt = 0;
+unsigned long retryDelayMs = MEASUREMENT_INTERVAL_MS;
+Measurement pendingMeasurements[MAX_MEASUREMENTS_PER_BATCH];
+int pendingMeasurementCount = 0;
 
-    // Connect to Wi-Fi
+void connectToWiFi() {
+    if (WiFi.status() == WL_CONNECTED) {
+        return;
+    }
+
+    WiFi.disconnect();
     WiFi.begin(
         WIFI_SSID,
         WIFI_PASSWORD
@@ -50,9 +57,25 @@ void setup() {
 
     Serial.println();
     Serial.println("Wi-Fi connected!");
-    
     Serial.print("ESP32 IP address: ");
     Serial.println(WiFi.localIP());
+}
+
+unsigned long getRetryDelay(unsigned long currentDelay) {
+    if (currentDelay >= MAX_RETRY_DELAY_MS / 2) {
+        return MAX_RETRY_DELAY_MS;
+    }
+
+    return currentDelay * 2;
+}
+
+void setup() {
+    Serial.begin(115200);
+    
+    // Seed the Arduino random number generator
+    randomSeed(esp_random());
+
+    connectToWiFi();
     
     // Register sensors
 
@@ -66,21 +89,48 @@ void setup() {
 }
 
 void loop() {
-    Measurement measurements[10];
-    int count = 0;
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Wi-Fi connection lost. Reconnecting...");
+        connectToWiFi();
+        nextMeasurementAt = millis();
+    }
 
-    count += dhtSensor.read(
-        measurements + count
+    unsigned long now = millis();
+    if (static_cast<long>(now - nextMeasurementAt) < 0) {
+        delay(50);
+        return;
+    }
+
+    if (pendingMeasurementCount == 0) {
+        pendingMeasurementCount += dhtSensor.read(
+            pendingMeasurements + pendingMeasurementCount
+        );
+
+        pendingMeasurementCount += distanceSensor.read(
+            pendingMeasurements + pendingMeasurementCount
+        );
+    }
+
+    if (pendingMeasurementCount == 0) {
+        retryDelayMs = MEASUREMENT_INTERVAL_MS;
+        nextMeasurementAt = millis() + retryDelayMs;
+        return;
+    }
+
+    bool sent = apiClient.sendMeasurements(
+        pendingMeasurements,
+        pendingMeasurementCount
     );
 
-    count += distanceSensor.read(
-        measurements + count
-    );
-    
-    apiClient.sendMeasurements(
-        measurements, 
-        count
-    );
+    if (sent) {
+        pendingMeasurementCount = 0;
+        retryDelayMs = MEASUREMENT_INTERVAL_MS;
+    } else {
+        Serial.print("Retrying in ");
+        Serial.print(retryDelayMs);
+        Serial.println(" ms");
+        retryDelayMs = getRetryDelay(retryDelayMs);
+    }
 
-    delay(3000);
+    nextMeasurementAt = millis() + retryDelayMs;
 }

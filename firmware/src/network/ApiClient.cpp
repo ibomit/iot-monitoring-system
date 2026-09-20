@@ -16,13 +16,14 @@ ApiClient::ApiClient(
     : serverUrl(serverUrl),
       deviceUid(deviceUid) {}
 
-void ApiClient::registerSensor(
+bool ApiClient::registerSensor(
     Sensor& sensor
 ){
     HTTPClient http;
     String registerUrl=String(serverUrl) + SENSORS_REGISTER_ENDPOINT;
 
     http.begin(registerUrl);
+    http.setTimeout(5000);
     http.addHeader(
         "Content-Type",
         "application/json"
@@ -67,7 +68,7 @@ void ApiClient::registerSensor(
     );
 
 
-    if (httpResponseCode > 0) {
+    if (httpResponseCode >= 200 && httpResponseCode < 300) {
         Serial.println(
             http.getString()
         );
@@ -81,8 +82,9 @@ void ApiClient::registerSensor(
 
 
     http.end();
+    return httpResponseCode >= 200 && httpResponseCode < 300;
 }
-void ApiClient::sendMeasurements(
+bool ApiClient::sendMeasurements(
     Measurement* measurements,
     int count
 ){
@@ -125,6 +127,7 @@ void ApiClient::sendMeasurements(
     HTTPClient http;
     String measurementsUrl = String(serverUrl) + MEASUREMENTS_ENDPOINT;
     http.begin(measurementsUrl);
+    http.setTimeout(5000);
     http.addHeader(
         "Content-Type",
         "application/json"
@@ -147,7 +150,9 @@ void ApiClient::sendMeasurements(
     Serial.print("HTTP response code: ");
     Serial.println(httpResponseCode);
 
-    if (httpResponseCode > 0) {
+    bool success = httpResponseCode >= 200 && httpResponseCode < 300;
+
+    if (success) {
         Serial.println(http.getString());
     } else {
         Serial.print("HTTP error: ");
@@ -155,4 +160,5 @@ void ApiClient::sendMeasurements(
     }
 
     http.end();
+    return success;
 }

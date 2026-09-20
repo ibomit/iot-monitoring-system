@@ -1,9 +1,4 @@
 import type { ISensor } from '../services/api'
-// import { useNavigate } from 'react-router-dom'
-import {
-    Card,
-    CardHeader
-} from "@/components/ui/card"
 import './SensorCard.css'
 
 
