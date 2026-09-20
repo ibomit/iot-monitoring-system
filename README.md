@@ -60,8 +60,6 @@ The planned architecture is:
 
 ## 📁 Project Structure
 
-## 📁 Project Structure
-
 ```text
 iot-monitoring-system/
 │

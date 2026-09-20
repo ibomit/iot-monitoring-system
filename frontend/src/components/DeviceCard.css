@@ -14,6 +14,50 @@
   transform: translateY(-0.5rem);
   box-shadow: 0rem 10px 25px rgb(0 0 0 / 20%);
 }
+.device-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.device-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--color-muted);
+}
+
+.device-card-title {
+  min-width: 0
+}
+
+.device-card-title h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.device-card-title p {
+  margin: 0.2rem 0 0; 
+  font-size: 1rem; 
+  color: var(--color-muted-foreground);
+}
+.device-card-info{
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: var(--color-secondary-foreground);
+}
+.device-card-footer{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
 .device-card h3{
   margin-block: 0 1rem;
 }

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.auth import AdminUser, CurrentUser
 from app.dependencies import DbSession
-from app.schemas.device import DeviceCreate, DeviceDashboardResponse, DeviceResponse
+from app.schemas.device import DeviceCreate, DeviceDashboardResponse, DeviceDeleteResponse, DeviceResponse
 from app.schemas.measurement import MeasurementResponse
 from app.schemas.sensor import SensorResponse
 from app.services import device_service
@@ -140,3 +140,33 @@ def get_device(
         )
 
     return device
+
+@router.delete(
+    "/{device_uid}",
+    response_model=DeviceDeleteResponse,
+    status_code=status.HTTP_200_OK
+    )
+def delete_device(
+    device_uid: str,
+    db: DbSession,
+    # current_user: AdminUser
+):
+    device = device_service.get_device_by_uid(
+        db=db,
+        device_uid=device_uid,
+    )
+
+    if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Device not found",
+        )
+
+    device_service.delete_device(
+        db=db,
+        device=device,
+    )
+    return {
+        "success": True,
+        "message": "Device deleted successfully."
+    }

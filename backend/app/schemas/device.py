@@ -20,6 +20,10 @@ class DeviceResponse(BaseModel):
     location: str
     created_at: datetime
 
+class DeviceDeleteResponse(BaseModel):
+    success: bool
+    message: str
+    
 class SensorDashboardResponse(BaseModel):
     sensor_uid: str
     name: str

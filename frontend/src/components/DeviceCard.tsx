@@ -1,9 +1,7 @@
-import type { IDevice } from '../services/api'
+import { Cpu } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { 
-    Card,
-    CardHeader
- } from "@/components/ui/card"
+import type { IDevice } from '../services/api'
+
 import './DeviceCard.css'
 
 
@@ -15,20 +13,37 @@ function DeviceCard({
     device
 }: DeviceCardProps) {
     const navigate = useNavigate()
+
     return (
-            <button
-                type="button"
-                className="device-card"
-                onClick={() => navigate(`/devices/${device.device_uid}`)}
-                >
-                <h3>{device.name}</h3>
+        <button
+            type="button"
+            className="device-card"
+            onClick={() => navigate(`/devices/${device.device_uid}`)}
+        >
+            <div className="device-card-header">
+
+                <div className="device-card-icon">
+                    <Cpu size={48} />
+                </div>
+                <div className="device-card-title">
+                    <h3>{device.name}</h3>
+
+                </div>
+            </div>
+            <div className="device-card-info">
+
                 <p>
-                    <strong>Device:</strong>{device.name}
+                    <strong>Device:</strong>{device.device_uid}
                 </p>
                 <p>
                     <strong>Location:</strong>{device.location}
                 </p>
-            </button>
+            </div>
+            <div className="device-card-footer">
+                <span>3 sensors</span>
+                <span>Last seen: 2 min ago</span>
+            </div>
+        </button>
 
     )
 }
