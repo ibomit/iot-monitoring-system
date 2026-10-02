@@ -332,13 +332,22 @@ uv run alembic current
 ```
 
 ## ⚙️ Environment Variables
-The database connection is configured using environment variables. 
+The backend is configured using environment variables in `backend/.env`.
 
 Example ```.env``` file: 
 
 ```py
 DATABASE_URL=postgresql+psycopg://<user>:<password>@localhost:5432/<db>
+SECRET_KEY=<random string, at least 32 characters>
 ```
+
+Generate a secret key with:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Optional: `ALGORITHM` (default `HS256`), `ACCESS_TOKEN_EXPIRE_MINUTES` (default `60`) and `CORS_ORIGINS` (comma-separated list of allowed frontend origins, default `http://localhost:5173`).
 
 The ```.env``` file should not be commited to Git
 
