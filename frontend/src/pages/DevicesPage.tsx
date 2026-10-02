@@ -24,8 +24,11 @@ interface DevicesTableProps {
     devices: IDevice[],
     error: string | null,
     loading: boolean,
-    hasSearchQuery: boolean
+    hasSearchQuery: boolean,
+    onRetry: () => void
 }
+
+const DEVICES_REFRESH_INTERVAL_MS = 10000
 
 function Devices() {
 
@@ -33,6 +36,8 @@ function Devices() {
     const [searchQuery, setSearchQuery] = useState<string>('')
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true)
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
 
     const filteredDevices = devices.filter((device) =>
         device.name
@@ -57,7 +62,8 @@ function Devices() {
     useEffect(() => {
         let cancelled = false
 
-        async function loadInitialDevices() {
+        // Silent refresh: does not toggle the loading state, so the grid doesn't flash
+        async function refreshDevices() {
             try {
                 const data = await getDevices()
                 if (!cancelled) {
@@ -76,9 +82,15 @@ function Devices() {
             }
         }
 
-        void loadInitialDevices()
+        void refreshDevices()
+        const intervalId = window.setInterval(
+            refreshDevices,
+            DEVICES_REFRESH_INTERVAL_MS
+        )
+
         return () => {
             cancelled = true
+            window.clearInterval(intervalId)
         }
     }, [])
 
@@ -93,41 +105,47 @@ function Devices() {
 
         console.log('Adding device:', { device_name, device_uid, device_location })
 
+        setSubmitting(true)
         try {
             await createDevice(
                 device_name,
                 device_uid,
                 device_location
             )
-            toast.add({
-                title: "Device Added",
-                description: `Device ${device_name} has been added successfully.`,
-                type: "success",
-            })
-            
         } catch (err) {
-        console.error('Failed to create device:', err)
-        
-        if (
-            err instanceof Error &&
-            'status' in err &&
-            err.status === 409  
-        ){
+            console.error('Failed to create device:', err)
+
+            // Keep the dialog open so the user can fix the input
+            if (
+                err instanceof Error &&
+                'status' in err &&
+                err.status === 409
+            ) {
+                toast.add({
+                    title: "Error",
+                    description: `Device with UID ${device_uid} already exists.`,
+                    type: "error",
+                })
+                return
+            }
             toast.add({
                 title: "Error",
-                description: `Device with UID ${device_uid} already exists.`,
+                description: `Failed to add device ${device_name}. Please try again.`,
                 type: "error",
             })
             return
+        } finally {
+            setSubmitting(false)
         }
+
         toast.add({
-            title: "Error",
-            description: `Failed to add device ${device_name}. Please try again.`,
-            type: "error",
+            title: "Device Added",
+            description: `Device ${device_name} has been added successfully.`,
+            type: "success",
         })
+        setDialogOpen(false)
+        await loadDevices()
     }
-    await loadDevices()
-}
 
 // async function handleDeleteDevice(event: React.SubmitEvent<HTMLFormElement>) {
 //     event.preventDefault()
@@ -181,7 +199,7 @@ return (
                 <Button variant="outline" size="icon" onClick={() => void loadDevices()} disabled={loading} aria-label="Refresh devices" title="Refresh devices">
                     <RefreshCw className={loading ? 'animate-spin' : ''} />
                 </Button>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger render={<Button><Plus /> Add device</Button>} />
                 <DialogContent className="sm:max-w-sm">
                     <form onSubmit={handleAddDeviceSubmit}>
@@ -195,20 +213,20 @@ return (
                         <FieldGroup>
                             <Field>
                                 <Label htmlFor="device_name">Name</Label>
-                                <Input id="device_name" name="device_name" required />
+                                <Input id="device_name" name="device_name" maxLength={100} required />
                             </Field>
                             <Field>
                                 <Label htmlFor="device_uid">Device UID</Label>
-                                <Input id="device_uid" name="device_uid" required />
+                                <Input id="device_uid" name="device_uid" maxLength={100} required />
                             </Field>
                             <Field>
                                 <Label htmlFor="device_location">Location</Label>
-                                <Input id="device_location" name="device_location" required />
+                                <Input id="device_location" name="device_location" maxLength={100} required />
                             </Field>
                         </FieldGroup>
                         <DialogFooter>
                             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-                            <DialogClose render={<Button type="submit">Add Device</Button>} />
+                            <Button type="submit" disabled={submitting}>Add Device</Button>
                         </DialogFooter>
                     </form >
                 </DialogContent>
@@ -227,19 +245,20 @@ return (
                     devices={filteredDevices}
                     error={error}
                     loading={loading}
-                    hasSearchQuery={searchQuery.trim().length > 0} />
+                    hasSearchQuery={searchQuery.trim().length > 0}
+                    onRetry={() => void loadDevices()} />
         </section>
     </div>
 )
 }
 
-function DevicesTable({ devices, error, loading, hasSearchQuery }: DevicesTableProps) {
+function DevicesTable({ devices, error, loading, hasSearchQuery, onRetry }: DevicesTableProps) {
     return (
         <>
             {error && (
                 <div className="device-state error-message" role="alert">
                     <p>{error}</p>
-                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Try again</Button>
+                    <Button variant="outline" size="sm" onClick={onRetry}>Try again</Button>
                 </div>
             )}
             {loading ? (

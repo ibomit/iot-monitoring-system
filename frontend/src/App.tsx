@@ -1,5 +1,4 @@
 import './App.css'
-// import NavBar from './components/NavBar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 

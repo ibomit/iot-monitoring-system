@@ -22,23 +22,39 @@ function DeviceDashboard() {
   const { deviceUid } = useParams()
 
   useEffect(() => {
-    async function loadDashboard() {
-      if (!deviceUid) {
-        return
-      }
+    if (!deviceUid) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadDashboard(uid: string) {
+      setLoading(true)
+      setError(null)
       try {
-        const data = await getDeviceDashboard(
-          deviceUid,
-        )
+        const data = await getDeviceDashboard(uid)
+        if (cancelled) {
+          return
+        }
         setDashboard(data)
+        if (data === null) {
+          setError('Device not found')
+        }
       } catch {
-        setError('Failed to load device dashboard')
+        if (!cancelled) {
+          setError('Failed to load device dashboard')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
-    loadDashboard()
+    void loadDashboard(deviceUid)
+    return () => {
+      cancelled = true
+    }
   }, [deviceUid])
 
   return (
@@ -49,50 +65,42 @@ function DeviceDashboard() {
         ← Back to devices
       </Button>
 
-      <section>
-        <div className="dashboard-grid">
-          <div className="dashboard-device-information">
-
-            <h2>{dashboard?.name}</h2>
-            <p>
-              <strong>Device:</strong> {dashboard?.device_uid}
-            </p>
-            <p>
-              <strong>Location:</strong> {dashboard?.location}
-            </p>
-            <p>
-              <strong>Status: Online</strong>
-            </p>
-            <p> {/*TODO: Add "registered_at" */}
-              <strong>Registered:</strong>
-            </p>
-          </div>
-          <div className="dashboard-sensors">
-            <h2>Sensors</h2>
-            <div className='devices-grid'>
-              {dashboard?.sensors.map(
-                (sensor) => (
-                  <SensorCard
-                    key={sensor.sensor_uid}
-                    sensor={sensor} />
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {loading && <p>Loading dashboard...</p>}
 
-      {error && <p>{error}</p>}
+      {error && <p role="alert">{error}</p>}
 
-      {dashboard && (
+      {!loading && dashboard && (
         <section>
-          <h2>Dashboard Data</h2>
+          <div className="dashboard-grid">
+            <div className="dashboard-device-information">
 
-          <pre>
-            {JSON.stringify(dashboard, null, 2) ?? ''}
-          </pre>
+              <h2>{dashboard.name}</h2>
+              <p>
+                <strong>Device:</strong> {dashboard.device_uid}
+              </p>
+              <p>
+                <strong>Location:</strong> {dashboard.location}
+              </p>
+              <p>
+                <strong>Status:</strong> {dashboard.status}
+              </p>
+              <p> {/*TODO: Add "registered_at" */}
+                <strong>Registered:</strong>
+              </p>
+            </div>
+            <div className="dashboard-sensors">
+              <h2>Sensors</h2>
+              <div className='devices-grid'>
+                {dashboard.sensors.map(
+                  (sensor) => (
+                    <SensorCard
+                      key={sensor.sensor_uid}
+                      sensor={sensor} />
+                  )
+                )}
+              </div>
+            </div>
+          </div>
         </section>
       )}
     </main>

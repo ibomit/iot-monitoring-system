@@ -24,7 +24,6 @@ export interface IMeasurement {
     created_at: string
 }
 export interface IDeviceDashboard {
-    id: number
     device_uid: string
     name: string
     location: string
@@ -37,7 +36,9 @@ export interface DeviceDeleteResponse {
     message: string
 }
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL: string = (
+    import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+).replace(/\/$/, '')
 
 export function getApiBaseUrl(): string {
     return API_BASE_URL
@@ -130,6 +131,9 @@ export async function getDeviceDashboard(
 ): Promise<IDeviceDashboard | null> {
     const response = await fetch(`${API_BASE_URL}/api/devices/${deviceUid}/dashboard`)
 
+    if (response.status === 404) {
+        return null
+    }
     if (!response.ok) {
         throw new Error('Failed to fetch device dashboard')
     }
