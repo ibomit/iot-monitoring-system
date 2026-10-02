@@ -374,6 +374,9 @@ docker compose --profile app run --rm backend alembic upgrade head
 
 The backend reads `SECRET_KEY` from `backend/.env`. `VITE_API_URL` is baked into the frontend at build time.
 
+## 🔁 Continuous Integration
+`.github/workflows/ci.yml` runs on every pull request. It applies the migrations and checks that they match the models, runs the backend tests, lints and builds the frontend, and builds both Docker images.
+
 ## ⚙️ ESP32 Firmware
 The project includes firmware for an ESP32 microcontroller, located in the `firmware/` directory.
 
