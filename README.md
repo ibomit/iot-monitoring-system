@@ -174,6 +174,16 @@ bash run.sh
 The API will be available at: 
 http://127.0.0.1:8000
 
+## 🖥️ Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The dashboard runs at http://localhost:5173. It reads the API address from `VITE_API_URL` (default `http://localhost:8000`); copy `frontend/.env.example` to `frontend/.env` to change it. The backend must allow the dashboard origin through `CORS_ORIGINS` (default `http://localhost:5173`).
+
 ## 📚 API Documentation
 FastAPI automatically generates interactive API documentation.
 Once the backend is running, open:
