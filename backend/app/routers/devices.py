@@ -33,18 +33,10 @@ def create_device(
     data: DeviceCreate,
     db: DbSession,
 ):
-    device = device_service.create_device(
+    return device_service.create_device(
         db,
         data,
     )
-
-    if device is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Device already exists",
-        )
-
-    return device
 
 @router.get(
     "/{device_uid}/dashboard",

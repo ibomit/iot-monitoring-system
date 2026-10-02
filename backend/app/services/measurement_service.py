@@ -1,7 +1,7 @@
-
 from sqlalchemy.orm import Session
 
 from app import models
+from app.exceptions import BadRequestError, NotFoundError
 from app.schemas.measurement import MeasurementsCreate
 
 
@@ -37,7 +37,7 @@ def create_measurements(
 
         if device is None:
 
-            return None, "device_not_found"
+            raise NotFoundError("Device not found")
 
         # Get unique sensor UIDs from request
         sensor_uids = list({
@@ -74,17 +74,16 @@ def create_measurements(
             # Sensor not found
             if sensor is None:
 
-                return (
-                    None,
-                    f"sensor_not_found:{measurement.sensor_uid}"
+                raise NotFoundError(
+                    f"Sensor not found: {measurement.sensor_uid}"
                 )
 
             # Verify sensor belongs to device
             if sensor.device_id != device.id:
 
-                return (
-                    None,
-                    f"wrong_device:{measurement.sensor_uid}"
+                raise BadRequestError(
+                    f"Sensor {measurement.sensor_uid} "
+                    "does not belong to this device"
                 )
 
             db_measurement = models.Measurement(
@@ -105,7 +104,7 @@ def create_measurements(
         # Save everything in one transaction
         db.commit()
 
-        return saved_measurements, "created"
+        return saved_measurements
 
     except Exception:
 

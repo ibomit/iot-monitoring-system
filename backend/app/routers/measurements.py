@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 from app.dependencies import DbSession
 from app.schemas.measurement import (
@@ -42,46 +42,10 @@ def create_measurements(
     db: DbSession
 ):
 
-    measurements, result = (
-        measurement_service.create_measurements(
-            db,
-            data
-        )
+    measurements = measurement_service.create_measurements(
+        db,
+        data
     )
-
-    if result == "device_not_found":
-
-        raise HTTPException(
-            status_code=404,
-            detail="Device not found"
-        )
-
-    if result.startswith("sensor_not_found:"):
-
-        sensor_uid = result.split(
-            ":",
-            1
-        )[1]
-
-        raise HTTPException(
-            status_code=404,
-            detail=f"Sensor not found: {sensor_uid}"
-        )
-
-    if result.startswith("wrong_device:"):
-
-        sensor_uid = result.split(
-            ":",
-            1
-        )[1]
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Sensor {sensor_uid} "
-                "does not belong to this device"
-            )
-        )
 
     return {
         "message": "Measurements saved",

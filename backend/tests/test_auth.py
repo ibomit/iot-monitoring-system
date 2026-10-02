@@ -34,6 +34,24 @@ def test_register_returns_user_without_password(client):
     assert "password_hash" not in body
 
 
+def test_register_duplicate_username_returns_409(client):
+    register(client)
+
+    response = register(client, email="other@example.com")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Username already exists"
+
+
+def test_register_duplicate_email_returns_409(client):
+    register(client)
+
+    response = register(client, username="bob")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Email already exists"
+
+
 def test_register_rejects_short_password(client):
     assert register(client, password="short").status_code == 422
 
