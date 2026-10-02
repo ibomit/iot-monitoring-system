@@ -351,6 +351,16 @@ Optional: `ALGORITHM` (default `HS256`), `ACCESS_TOKEN_EXPIRE_MINUTES` (default 
 
 The ```.env``` file should not be commited to Git
 
+## 🧪 Tests
+Start PostgreSQL (`docker compose up -d`), then:
+
+```bash
+cd backend
+uv run pytest
+```
+
+The tests run against a separate `<database name>_test` database (for example `iot_db_test`), which is created automatically. They never touch the development database. To use a different one, set `TEST_DATABASE_URL`; its database name must end with `_test`.
+
 ## ⚙️ ESP32 Firmware
 The project includes firmware for an ESP32 microcontroller, located in the `firmware/` directory.
 
