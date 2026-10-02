@@ -17,11 +17,11 @@ class ApiClient {
             const char* deviceUid
         );
 
-        void registerSensor(
+        bool registerSensor(
             Sensor& sensor
         );
 
-        void sendMeasurements(
+        bool sendMeasurements(
             Measurement* measurements,
             int count
         );

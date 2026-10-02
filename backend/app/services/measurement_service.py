@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
 from app import models
@@ -95,6 +97,8 @@ def create_measurements(
             saved_measurements.append(
                 db_measurement
             )
+
+        device.last_seen_at = datetime.now()
 
         # Save everything in one transaction
         db.commit()

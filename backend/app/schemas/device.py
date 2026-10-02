@@ -19,7 +19,13 @@ class DeviceResponse(BaseModel):
     name: str
     location: str
     created_at: datetime
+    last_seen_at: datetime | None
+    status: str
 
+class DeviceDeleteResponse(BaseModel):
+    success: bool
+    message: str
+    
 class SensorDashboardResponse(BaseModel):
     sensor_uid: str
     name: str
@@ -30,4 +36,6 @@ class DeviceDashboardResponse(BaseModel):
     device_uid: str
     name: str
     location: str
+    last_seen_at: datetime | None
+    status: str
     sensors: list[SensorDashboardResponse]

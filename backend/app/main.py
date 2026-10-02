@@ -1,9 +1,10 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app import models
 from app.database import SessionLocal
-from app.routers import devices, measurements, sensors, auth
+from app.routers import auth, devices, measurements, sensors
 
 tags_metadata = [
     {
@@ -31,7 +32,13 @@ app = FastAPI(
     version="1.0.0",
     openapi_tags=tags_metadata
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 app.include_router(devices.router)
 app.include_router(sensors.router)
 app.include_router(measurements.router)

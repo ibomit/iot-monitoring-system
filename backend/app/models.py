@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -30,6 +30,21 @@ class Device(Base):
         DateTime,
         default=datetime.now,
     )
+
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    @property
+    def status(self) -> str:
+        if self.last_seen_at is None:
+            return "unknown"
+
+        if datetime.now() - self.last_seen_at <= timedelta(minutes=2):
+            return "online"
+
+        return "offline"
 
     # measurements: Mapped[list["Measurement"]] = relationship(
     #     back_populates="device"

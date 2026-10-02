@@ -1,0 +1,170 @@
+.devices-page {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+}
+
+.devices-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 170px;
+    padding: 2rem 2.25rem;
+    color: #f8fafc;
+    background: linear-gradient(120deg, #172554 0%, #1e3a8a 58%, #075985 100%);
+    border-radius: 1rem;
+    box-shadow: 0 18px 40px rgb(15 23 42 / 16%);
+    overflow: hidden;
+}
+
+.eyebrow {
+    margin: 0 0 0.55rem;
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.devices-hero h1 {
+    margin: 0;
+    color: inherit;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.04em;
+}
+
+.devices-description {
+    max-width: 34rem;
+    margin: 0.6rem 0 0;
+    color: #bfdbfe;
+}
+
+.devices-hero-mark {
+    display: grid;
+    place-items: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    color: #bae6fd;
+    background: rgb(255 255 255 / 10%);
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 1.5rem;
+    transform: rotate(8deg);
+}
+
+.devices-hero-mark svg {
+    width: 2rem;
+    height: 2rem;
+    transform: rotate(-8deg);
+}
+
+.device-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.25rem 0;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.1rem;
+    background: var(--color-surface, white);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 0.8rem;
+    box-shadow: 0 5px 18px rgb(15 23 42 / 5%);
+}
+
+.stat-icon {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.7rem;
+}
+
+.stat-icon svg { width: 1.1rem; }
+.stat-icon-blue { color: #2563eb; background: #dbeafe; }
+.stat-icon-green { color: #059669; background: #d1fae5; }
+.stat-icon-amber { color: #d97706; background: #fef3c7; }
+
+.stat-label {
+    display: block;
+    color: var(--color-text-muted, #64748b);
+    font-size: 0.75rem;
+}
+
+.stat-card strong {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 1.35rem;
+}
+
+.devices-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.75rem 0 1.25rem;
+}
+
+.device-search {
+    position: relative;
+    width: min(100%, 25rem);
+}
+
+.device-search input {
+    width: 100%;
+    height: 2.6rem;
+    padding: 0 0.9rem 0 2.4rem;
+    color: inherit;
+    background: var(--color-surface, white);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 0.65rem;
+    outline: none;
+}
+
+.device-search input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgb(96 165 250 / 18%); }
+.device-search-icon { position: absolute; top: 0.72rem; left: 0.8rem; width: 1rem; color: #94a3b8; }
+.device-actions { display: flex; align-items: center; gap: 0.55rem; }
+.device-actions svg { width: 1rem; }
+
+.devices-section { padding-bottom: 2rem; }
+.section-heading { margin-bottom: 0.8rem; }
+.section-heading h2 { margin: 0; font-size: 1.15rem; }
+.section-heading p { margin: 0.25rem 0 0; color: var(--color-text-muted, #64748b); font-size: 0.85rem; }
+
+.devices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 1rem;
+}
+
+.device-state {
+    display: grid;
+    justify-items: center;
+    gap: 0.45rem;
+    padding: 3.5rem 1rem;
+    color: var(--color-text-muted, #64748b);
+    text-align: center;
+    background: var(--color-surface, white);
+    border: 1px dashed var(--color-border, #cbd5e1);
+    border-radius: 0.8rem;
+}
+
+.device-state svg { width: 1.8rem; color: #64748b; }
+.device-state p { margin: 0; }
+.empty-state h3 { margin: 0.35rem 0 0; color: inherit; font-size: 1rem; }
+.empty-state p { font-size: 0.9rem; }
+.error-message { color: #b91c1c; background: #fff7f7; border-color: #fecaca; }
+
+@media (max-width: 640px) {
+    .devices-hero { min-height: 150px; padding: 1.5rem; }
+    .devices-hero-mark { width: 4rem; height: 4rem; }
+    .device-stats { gap: 0.6rem; }
+    .stat-card { align-items: flex-start; padding: 0.8rem; }
+    .stat-icon { width: 2rem; height: 2rem; }
+    .stat-label { font-size: 0.68rem; }
+    .stat-card strong { font-size: 1.1rem; }
+    .devices-toolbar { align-items: stretch; flex-direction: column; }
+    .device-search { width: 100%; }
+}

@@ -1,6 +1,7 @@
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
+from sqlalchemy.exc import SQLAlchemyError
 from app import models
 from app.schemas.device import DeviceCreate
 
@@ -37,8 +38,10 @@ def create_device(
     )
 
     if existing_device is not None:
-
-        return None
+        raise HTTPException(
+            status_code=409,
+            detail="Device with this UID already exists."
+        )
 
     device = models.Device(
         device_uid=data.device_uid,
@@ -51,6 +54,18 @@ def create_device(
     db.refresh(device)
 
     return device
+
+def delete_device(
+        db: Session,
+        device: models.Device
+) -> None:
+    try:
+        db.delete(device)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
 
 def get_latest_device_measurements(
     db: Session,
@@ -181,6 +196,8 @@ def get_device_dashboard(
         "device_uid": device.device_uid,
         "name": device.name,
         "location": device.location,
+        "last_seen_at": device.last_seen_at,
+        "status": device.status,
         "sensors": sensors,
     }
 
