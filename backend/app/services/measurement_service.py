@@ -1,4 +1,3 @@
-from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -7,11 +6,14 @@ from app.schemas.measurement import MeasurementsCreate
 
 
 def get_measurements(
-    db: Session
+    db: Session,
+    limit: int = 100,
 ):
 
     return (
         db.query(models.Measurement)
+        .order_by(models.Measurement.created_at.desc())
+        .limit(limit)
         .all()
     )
 
@@ -98,7 +100,7 @@ def create_measurements(
                 db_measurement
             )
 
-        device.last_seen_at = datetime.now()
+        device.last_seen_at = models.utcnow()
 
         # Save everything in one transaction
         db.commit()

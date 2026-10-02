@@ -1,9 +1,7 @@
 import os
 from collections.abc import Generator
-from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import Depends
 from sqlalchemy import create_engine
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -48,9 +46,3 @@ def get_db() -> Generator[Session, None, None]:
 
     finally:
         db.close()
-
-
-DbSession = Annotated[
-    Session,
-    Depends(get_db)
-]

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import DbSession
 from app.schemas.measurement import (
@@ -19,11 +19,17 @@ router = APIRouter(
     response_model=list[MeasurementResponse]
 )
 def get_measurements(
-    db: DbSession
+    db: DbSession,
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+    ),
 ):
 
     return measurement_service.get_measurements(
-        db
+        db,
+        limit,
     )
 
 

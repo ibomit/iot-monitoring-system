@@ -1,9 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Device(Base):
@@ -27,12 +31,12 @@ class Device(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now,
+        DateTime(timezone=True),
+        default=utcnow,
     )
 
     last_seen_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
     )
 
@@ -41,7 +45,7 @@ class Device(Base):
         if self.last_seen_at is None:
             return "unknown"
 
-        if datetime.now() - self.last_seen_at <= timedelta(minutes=2):
+        if utcnow() - self.last_seen_at <= timedelta(minutes=2):
             return "online"
 
         return "offline"
@@ -50,7 +54,8 @@ class Device(Base):
     #     back_populates="device"
     # )
     sensors: Mapped[list["Sensor"]] = relationship(
-        back_populates="device"
+        back_populates="device",
+        cascade="all, delete-orphan",
     )
 
 class Sensor(Base):
@@ -76,19 +81,28 @@ class Sensor(Base):
         nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now
+        DateTime(timezone=True),
+        default=utcnow
     )
     device: Mapped["Device"] = relationship(
         back_populates="sensors"
     )
 
     measurements: Mapped[list["Measurement"]] = relationship(
-        back_populates="sensor"
+        back_populates="sensor",
+        cascade="all, delete-orphan",
     )
 
 class Measurement(Base):
     __tablename__ = "measurements"
+    __table_args__ = (
+        Index(
+            "ix_measurements_sensor_metric_created_at",
+            "sensor_id",
+            "metric",
+            "created_at",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -116,8 +130,8 @@ class Measurement(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now,
+        DateTime(timezone=True),
+        default=utcnow,
     )
 
     sensor: Mapped["Sensor"] = relationship(
@@ -158,7 +172,7 @@ class User(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now,
+        DateTime(timezone=True),
+        default=utcnow,
         nullable=False
     )
