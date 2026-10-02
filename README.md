@@ -361,6 +361,19 @@ uv run pytest
 
 The tests run against a separate `<database name>_test` database (for example `iot_db_test`), which is created automatically. They never touch the development database. To use a different one, set `TEST_DATABASE_URL`; its database name must end with `_test`.
 
+## 🐳 Running Everything in Docker (optional)
+The backend and frontend have Dockerfiles. They are opt-in through a Compose profile, so a plain `docker compose up -d` still starts only PostgreSQL and Adminer.
+
+```bash
+docker compose --profile app up -d --build
+docker compose --profile app run --rm backend alembic upgrade head
+```
+
+- Dashboard: http://localhost:8081
+- API: http://localhost:8000 (stop a locally running backend first)
+
+The backend reads `SECRET_KEY` from `backend/.env`. `VITE_API_URL` is baked into the frontend at build time.
+
 ## ⚙️ ESP32 Firmware
 The project includes firmware for an ESP32 microcontroller, located in the `firmware/` directory.
 

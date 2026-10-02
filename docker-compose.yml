@@ -29,5 +29,35 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
 
+  # The services below are opt-in so the normal dev workflow (local uvicorn +
+  # vite) keeps working: docker compose --profile app up -d --build
+  backend:
+    profiles: ["app"]
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    # SECRET_KEY etc. come from backend/.env; DATABASE_URL is overridden below
+    # because inside Compose the database host is "postgres", not localhost
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://iot_user:iot_password@postgres:5432/iot_db
+      CORS_ORIGINS: http://localhost:8081
+    ports:
+      # All interfaces on purpose: the ESP32 reaches the API over the LAN
+      - "8000:8000"
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8081:80"
+
 volumes:
   postgres_data:
