@@ -1,180 +1,114 @@
-# IoT Monitoring System 
+# IoT Monitoring System
 
-An IoT monitoring system designed to collect sensor data from ESP32 devices and display it through a web-based dashboard.
+[![CI](https://github.com/ibomit/iot-monitoring-system/actions/workflows/ci.yml/badge.svg)](https://github.com/ibomit/iot-monitoring-system/actions/workflows/ci.yml)
 
-The Project is currently under development and is being built step by step as a full-stack IoT application.
+An end-to-end IoT monitoring system. ESP32 devices (or a Python simulator) send sensor measurements over HTTP to a FastAPI backend, which stores them in PostgreSQL and serves a React dashboard.
 
-## 🎯 Project Goals
+> **Status:** under active development. Devices, sensors and measurements work end to end, and the dashboard lists devices and their sensors. Latest values, charts and the login screen are still to come (see the Roadmap below).
 
-The main goal of this project is to build a complete IoT monitoring system that can:
+Built as a personal full-stack and IoT portfolio project.
 
-- Collect data from multiple sensors connected to ESP32 devices
-- Send sensor measurements to a backend API
-- Automatically register sensors connected to a device
-- Store devices, sensors, and measurements in PostgreSQL
-- Monitor multiple ESP32 devices
-- Support multiple sensors per device
-- Display sensor data in a web dashboard
-- Visualize sensor activity and movement
-- Provide an extensible architecture for future sensor implementations
+## ✨ Features
 
-## 🏗️ Project Architecture
+- Create devices in the dashboard, then let the ESP32 register its own sensors automatically
+- Multiple sensors per device and multiple metrics per sensor (a DHT sensor reports temperature and humidity)
+- Batched measurement uploads that are saved all-or-nothing
+- Device status (online, offline, unknown) derived from the last measurement received
+- Firmware that keeps retrying with backoff when Wi-Fi or the backend is down
+- JWT authentication with argon2 password hashing and an admin role
+- Alembic migrations, a pytest suite, Docker images and a CI pipeline
 
-The planned architecture is: 
-```
-                ┌─────────────────────┐
-                │       ESP32         │
-                │                     │
-                │  ┌───────────────┐  │
-                │  │   Sensor      │  │
-                │  │  Interface    │  │
-                │  └───────┬───────┘  │
-                │          │          │
-                │   ┌──────┴──────┐   │
-                │   │             │   │
-                │ Fake Sensors  Real  │
-                │              Sensors│
-                │   │             │   │
-                └───┼─────────────┼───┘
-                    │
-                    │ HTTP + JSON
-                    ▼
-             ┌───────────────┐
-             │   FastAPI     │
-             │    Backend    │
-             └───────┬───────┘
-                     │
-                     │ SQLAlchemy
-                     ▼
-             ┌───────────────┐
-             │ PostgreSQL    │
-             │   Database    │
-             └───────┬───────┘
-                     │
-                     ▼
-             ┌───────────────┐
-             │ React Frontend│
-             │   Dashboard   │
-             └───────────────┘
- ```
-
-## 📁 Project Structure
+## 🏗️ Architecture
 
 ```text
-iot-monitoring-system/
-│
-├── backend/                         # FastAPI backend application
-│   │
-│   ├── app/
-│   │   │
-│   │   ├── routers/                 # API routers
-│   │   │   ├── auth.py
-│   │   │   ├── devices.py
-│   │   │   ├── sensors.py
-│   │   │   └── measurements.py
-│   │   │
-│   │   ├── schemas/                 # Pydantic request/response schemas
-│   │   │   ├── device.py
-│   │   │   ├── sensor.py
-│   │   │   ├── measurement.py
-│   │   │   └── user.py
-│   │   │
-│   │   ├── services/                # Business logic
-│   │   │   ├── device_service.py
-│   │   │   ├── sensor_service.py
-│   │   │   ├── measurement_service.py
-│   │   │   └── user_service.py
-│   │   │
-│   │   ├── auth.py                  # Authentication dependencies
-│   │   ├── security.py              # Password hashing and JWT
-│   │   ├── dependencies.py          # Shared dependencies
-│   │   ├── database.py              # Database configuration
-│   │   ├── models.py                # SQLAlchemy models
-│   │   └── main.py                  # FastAPI application
-│   │
-│   ├── alembic/                     # Database migrations
-│   │   ├── versions/
-│   │   └── env.py
-│   │
-│   ├── pyproject.toml
-│   └── uv.lock
-│
-├── firmware/                        # ESP32 firmware
-│   │
-│   ├── include/
-│   │   └── secrets.h                # Wi-Fi credentials and sensitive configuration
-│   │
-│   ├── src/
-│   │   │
-│   │   ├── network/
-│   │   │   ├── ApiClient.h          # HTTP communication with backend
-│   │   │   └── ApiClient.cpp
-│   │   │
-│   │   ├── sensors/
-│   │   │   ├── Sensor.h             # Abstract sensor interface
-│   │   │   ├── FakeDHTSensor.h
-│   │   │   ├── FakeDHTSensor.cpp
-│   │   │   ├── FakeDistanceSensor.h
-│   │   │   └── FakeDistanceSensor.cpp
-│   │   │
-│   │   ├── Measurement.h            # Measurement data structure
-│   │   └── main.cpp                 # Main ESP32 application
-│   │
-│   ├── platformio.ini
-│   └── .gitignore
-│
-├── simulator/                       # Python sensor simulator
-│   └── sensor_simulator.py
-│
-├── frontend/                        # React dashboard (planned)
-│
-├── docs/                            # Project documentation
-│
-├── docker-compose.yml               # PostgreSQL Docker configuration
-├── README.md
-└── .gitignore
+ ┌──────────────┐   ┌──────────────┐
+ │    ESP32     │   │  Simulator   │
+ │ fake or real │   │   (Python)   │
+ │   sensors    │   │              │
+ └──────┬───────┘   └──────┬───────┘
+        └────────┬─────────┘
+                 │ HTTP + JSON
+                 ▼
+         ┌───────────────┐   JSON    ┌─────────────────┐
+         │    FastAPI    │◄─────────►│ React dashboard │
+         │    backend    │           │  (Vite + TS)    │
+         └───────┬───────┘           └─────────────────┘
+                 │ SQLAlchemy
+                 ▼
+         ┌───────────────┐
+         │  PostgreSQL   │
+         └───────────────┘
+```
+
+The backend keeps its layers separate:
+
+- **Routers** handle HTTP
+- **Services** hold the business logic and raise domain exceptions (`NotFoundError`, `ConflictError`, `BadRequestError`)
+- **Schemas** (Pydantic) define the API contract
+- **Models** (SQLAlchemy) map to the database
+
+One handler in `main.py` turns domain exceptions into 404, 409 and 400 responses.
+
+### Data model
+
+```text
+Device 1 ────── * Sensor 1 ────── * Measurement
+```
+
+| Table | Main fields |
+|---|---|
+| `devices` | `device_uid` (unique, identifies the physical device), `name`, `location`, `created_at`, `last_seen_at` |
+| `sensors` | `sensor_uid` (unique), `name`, `sensor_type`, `device_id`, `created_at` |
+| `measurements` | `sensor_id`, `metric`, `value`, `unit`, `created_at` |
+| `users` | `username`, `email`, `password_hash`, `role`, `created_at` |
+
+All timestamps are stored as timezone-aware UTC and returned as ISO 8601 strings ending in `Z`.
+
 ## 🛠️ Tech Stack
 
-### Backend
-- Python 
-- FastAPI
-- Pydantic
-- SQLAlchemy
-- Alembic
-- PostgreSQL
-- psycopg 
-- uv
-### Firmware
-- C++
-- ESP32
-- Arduino Framework
-- PlatformIO
-### Database
-- PostgreSQL
-- Docker
+| Area | Technology |
+|---|---|
+| Backend | Python 3.14, FastAPI, SQLAlchemy 2, Pydantic, Alembic, PostgreSQL 17 (psycopg), uv, pytest |
+| Frontend | React 19, TypeScript, Vite, React Router, Tailwind CSS, shadcn/ui (Base UI), Lucide |
+| Firmware | C++ (Arduino framework), PlatformIO, ESP32 |
+| Infrastructure | Docker, Docker Compose, GitHub Actions |
 
-### Planned
-- React
-- JavaScript
-- Data visualization libraries
+## 🚀 Quick Start
 
-## ⚙️ Backend Setup
+**Prerequisites:** Docker, [uv](https://docs.astral.sh/uv/) and Node.js 22. PlatformIO is only needed for the firmware.
+
+**1. Start PostgreSQL**
+
+```bash
+docker compose up -d
+```
+
+Adminer (a database browser) is available at http://localhost:8080 with server `postgres`.
+
+**2. Configure the backend.** Create `backend/.env`:
+
+```bash
+DATABASE_URL=postgresql+psycopg://iot_user:iot_password@localhost:5432/iot_db
+SECRET_KEY=<a random string of at least 32 characters>
+```
+
+Generate a key with:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+**3. Apply the migrations and start the API**
 
 ```bash
 cd backend
-```
-Run the FastAPI development server:
-```bash
-uv run fastapi dev app/main.py 
-```
-or 
-```bash
+uv run alembic upgrade head
 bash run.sh
 ```
-The API will be available at: 
-http://127.0.0.1:8000
 
-## 🖥️ Frontend Setup
+The API runs at http://localhost:8000 and its interactive docs at http://localhost:8000/docs.
+
+**4. Start the dashboard** (in a second terminal)
 
 ```bash
 cd frontend
@@ -182,468 +116,236 @@ npm install
 npm run dev
 ```
 
-The dashboard runs at http://localhost:5173. It reads the API address from `VITE_API_URL` (default `http://localhost:8000`); copy `frontend/.env.example` to `frontend/.env` to change it. The backend must allow the dashboard origin through `CORS_ORIGINS` (default `http://localhost:5173`).
+The dashboard runs at http://localhost:5173.
 
-## 📚 API Documentation
-FastAPI automatically generates interactive API documentation.
-Once the backend is running, open:
-```
-http://127.0.0.1:8000/docs
-```
-The API is organized into the following Swagger groups:
-- Health
-- Authentication
-- Devices
-- Sensors
-- Measurements
-
-The `/docs` page contains the complete and up-to-date API reference, including: 
-- Available endpoints
-- Request schemas
-- Response schemas
-- Validation rules
-- Interactive API testing
-
-## 🔐 Authentication
-
-The backend includes user authentication using JWT (JSON Web Tokens).
-
-Current authentication features:
-
-- User registration
-- Password hashing
-- User login
-- JWT access tokens
-- Current user authentication
-- Role-based authorization
-- Admin role support
-
-Authentication endpoints are available under:
-
-```text
-/api/auth
-``` 
-Authentication and authorization are implemented and tested, while IoT API endpoints remain public during development.
-## 🤖 Sensor Simulator
-
-The project includes a Python-based sensor simulator for testing the backend without physical ESP32 hardware.
-
-The simulator:
-
-- Simulates an IoT device
-- Registers sensors with the backend
-- Generates random sensor measurements
-- Sends measurements to the FastAPI API
-
-This allows the backend to be tested using the same Device → Sensor → Measurement architecture as the ESP32 firmware.
-
-### Running the Simulator
-
-Make sure the FastAPI backend is running first:
+**5. Send some data.** In the dashboard, click **Add device** and create a device with the UID `simulator-001`. Then, from the repository root:
 
 ```bash
-cd backend
-uv run fastapi dev app/main.py
-```
-Then, in a separate terminal:
-```bash
-uv run python simulator/sensor_simulator.py
-```
-## 🗄️ Database
-The project uses PostgreSQL to store: 
-- Users
-- Devices
-- Sensors
-- Measurements
-
-PostgreSQL runs inside a Docker container 
-### Database Relationships
-```
-Device 1 ────── * Sensor 1 ────── * Measurement
-```
-A device can have multiple Sensors.
-
-A sensor can have multiple measurements
-
-### Database Structure
-```
-┌───────────────┐
-│    Devices    │
-├───────────────┤
-│ id            │
-│ device_uid    │
-│ name          │
-│ location      │
-│ created_at    │
-└───────┬───────┘
-        │
-        │ One Device
-        │
-        │ has many
-        ▼
-┌───────────────┐
-│    Sensors    │
-├───────────────┤
-│ id            │
-│ sensor_uid    │
-│ name          │
-│ sensor_type   │
-│ device_id     │
-│ created_at    │
-└───────┬───────┘
-        │
-        │ One Sensor
-        │
-        │ has many
-        ▼
-┌────────────────┐
-│  Measurements  │
-├────────────────┤
-│ id             │
-│ sensor_id      │
-│ metric         │
-│ value          │
-│ unit           │
-│ created_at     │
-└────────────────┘
-```
-### 🐘 Running PostgreSQL
-Start the database:
-
-```bash
- docker compose up -d
+uv run --project backend python simulator/sensor_simulator.py
 ```
 
-Stop the database:
+The simulator registers two sensors and sends a batch of measurements every 5 seconds. Within about 10 seconds the device shows as **online** (the device list refreshes every 10 seconds).
 
-```bash
-docker compose down
-```
+### Run everything in Docker (optional)
 
-### 🔄 Database Migrations
-Database schema changes are managed using Alembic.
-
-Create a migration:
-
-```bash
-uv run alembic revision --autogenerate -m "Migration description" 
-```
-
-Apply migrations: 
-
-```bash
-uv run alembic upgrade head
-```
-
-Check the current migration version: 
-
-```bash
-uv run alembic current
-```
-
-## ⚙️ Environment Variables
-The backend is configured using environment variables in `backend/.env`.
-
-Example ```.env``` file: 
-
-```py
-DATABASE_URL=postgresql+psycopg://<user>:<password>@localhost:5432/<db>
-SECRET_KEY=<random string, at least 32 characters>
-```
-
-Generate a secret key with:
-
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Optional: `ALGORITHM` (default `HS256`), `ACCESS_TOKEN_EXPIRE_MINUTES` (default `60`) and `CORS_ORIGINS` (comma-separated list of allowed frontend origins, default `http://localhost:5173`).
-
-The ```.env``` file should not be commited to Git
-
-## 🧪 Tests
-Start PostgreSQL (`docker compose up -d`), then:
-
-```bash
-cd backend
-uv run pytest
-```
-
-The tests run against a separate `<database name>_test` database (for example `iot_db_test`), which is created automatically. They never touch the development database. To use a different one, set `TEST_DATABASE_URL`; its database name must end with `_test`.
-
-## 🐳 Running Everything in Docker (optional)
-The backend and frontend have Dockerfiles. They are opt-in through a Compose profile, so a plain `docker compose up -d` still starts only PostgreSQL and Adminer.
+The backend and frontend also have Docker images. They are opt-in, so a plain `docker compose up -d` still starts only PostgreSQL and Adminer.
 
 ```bash
 docker compose --profile app up -d --build
 docker compose --profile app run --rm backend alembic upgrade head
 ```
 
-- Dashboard: http://localhost:8081
-- API: http://localhost:8000 (stop a locally running backend first)
+The dashboard is then at http://localhost:8081 and the API at http://localhost:8000. Stop a locally running backend first, and make sure `backend/.env` contains a `SECRET_KEY`.
 
-The backend reads `SECRET_KEY` from `backend/.env`. `VITE_API_URL` is baked into the frontend at build time.
+## ⚙️ Configuration
 
-## 🔁 Continuous Integration
-`.github/workflows/ci.yml` runs on every pull request. It applies the migrations and checks that they match the models, runs the backend tests, lints and builds the frontend, and builds both Docker images.
+| Where | Variable | Required | Default | Purpose |
+|---|---|---|---|---|
+| `backend/.env` | `DATABASE_URL` | yes | | PostgreSQL connection string |
+| `backend/.env` | `SECRET_KEY` | yes | | JWT signing key (at least 32 characters; the app refuses to start without it) |
+| `backend/.env` | `CORS_ORIGINS` | no | `http://localhost:5173` | Comma-separated list of allowed dashboard origins |
+| `backend/.env` | `ACCESS_TOKEN_EXPIRE_MINUTES` | no | `60` | JWT lifetime |
+| `backend/.env` | `ALGORITHM` | no | `HS256` | JWT algorithm |
+| `frontend/.env` | `VITE_API_URL` | no | `http://localhost:8000` | API address used by the browser (copy `frontend/.env.example`; baked in at build time in Docker) |
+| `firmware/include/secrets.h` | Wi-Fi and server address | yes | | See the firmware section |
 
-## ⚙️ ESP32 Firmware
-The project includes firmware for an ESP32 microcontroller, located in the `firmware/` directory.
+`.env` files and `secrets.h` are gitignored and must never be committed.
 
-The ESP32 firmware is developed using:
-- PlatformIO
-- Arduino framework
-- Espressif ESP32 platform
-- C++
+## 📚 API
 
-### 📶 Wi-Fi Connection
-The ESP32 connects to a local Wi-Fi network before communicating with the backend. 
-Wi-Fi credentials are stored separately from the main firmware code.
+Interactive documentation is generated by FastAPI at http://localhost:8000/docs.
 
-Example:
-```cpp
-#define WIFI_SSID "your-wifi"
-#define WIFI_PASSWORD "your-password"
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/api/devices` | Create a device (`409` if the `device_uid` already exists) |
+| `GET` | `/api/devices` | List devices with their status |
+| `GET` | `/api/devices/{device_uid}` | Get one device |
+| `DELETE` | `/api/devices/{device_uid}` | Delete a device together with its sensors and measurements |
+| `GET` | `/api/devices/{device_uid}/dashboard` | Device with its sensors and the latest value of each metric |
+| `GET` | `/api/devices/{device_uid}/sensors` | Sensors of a device |
+| `GET` | `/api/devices/{device_uid}/measurements/latest` | Latest value per sensor and metric |
+| `POST` | `/api/sensors/register` | Register a sensor (idempotent, used by the firmware) |
+| `GET` | `/api/sensors` | List sensors |
+| `GET` | `/api/sensors/{sensor_uid}/measurements` | History, newest first (`limit` 1 to 1000, optional `start` and `end`) |
+| `GET` | `/api/sensors/{sensor_uid}/measurements/latest` | Latest value per metric |
+| `POST` | `/api/measurements` | Submit a batch of measurements (used by the firmware) |
+| `GET` | `/api/measurements` | Most recent measurements (`limit` 1 to 1000) |
+| `POST` | `/api/auth/register` | Create a user |
+| `POST` | `/api/auth/login` | Log in and receive a JWT |
+| `GET` | `/api/auth/me` | Current user |
+
+### Device contract
+
+This is the contract the ESP32 firmware and the simulator rely on.
+
+Register a sensor. Repeating the request is safe and returns "Sensor already registered":
+
+```http
+POST /api/sensors/register
+{
+  "device_uid": "esp32-001",
+  "sensor_uid": "fake-dht-001",
+  "name": "DHT Sensor",
+  "sensor_type": "DHT"
+}
 ```
-Sensitive Credentials should not be commited to Git. During development, the sensitive Credentials are stored under ```iot-monitoring-system/firmware/include/secrets.h```. 
 
-### 🌐 ESP32 to Backend Communication
-The ESP32 communicates with the backend using: 
+Submit measurements. A batch can mix several sensors and is saved all-or-nothing:
 
+```http
+POST /api/measurements
+{
+  "device_uid": "esp32-001",
+  "measurements": [
+    { "sensor_uid": "fake-dht-001", "metric": "temperature", "value": 22.4, "unit": "celsius" },
+    { "sensor_uid": "fake-dht-001", "metric": "humidity", "value": 48.1, "unit": "percent" }
+  ]
+}
 ```
- HTTP + JSON
+
+Errors devices may see:
+
+| Status | Meaning |
+|---|---|
+| `404` | `Device not found`, or `Sensor not found: <sensor_uid>` |
+| `400` | The sensor belongs to a different device |
+| `422` | Invalid input: text fields are limited to 100 characters (`unit`: 50) and a batch to 100 measurements |
+
+A device is **online** if a measurement arrived in the last 2 minutes, **offline** if its last one is older, and **unknown** if it has never reported.
+
+## 🔐 Authentication and Security
+
+Implemented: user registration, login, JWT access tokens, the current-user endpoint, an admin role and argon2 password hashing.
+
+**Current limitation:** during development, the dashboard and device-management endpoints are not protected. The `CurrentUser` and `AdminUser` guards exist but are switched off until the login screen is built, and the device endpoints are public by design. Do not expose the backend to untrusted networks yet. Per-device authentication is on the roadmap.
+
+Other safeguards: secrets live in gitignored files, the app refuses to start without a `SECRET_KEY`, and PostgreSQL and Adminer only listen on `localhost`.
+
+## 📟 ESP32 Firmware
+
+The firmware lives in `firmware/` and is built with PlatformIO. It currently uses fake sensors, so no hardware beyond the board is needed.
+
+**Setup**
+
+1. Copy `firmware/include/secrets.h.example` to `firmware/include/secrets.h` and fill in your Wi-Fi name, password and the backend address, for example `http://192.168.1.20:8000` (the computer running the backend, reachable from the ESP32's network).
+2. Create a device in the dashboard whose UID matches `DEVICE_UID` in `firmware/src/main.cpp` (default `esp32-001`).
+3. Upload and watch the serial output:
+
+```bash
+cd firmware
+pio run -t upload
+pio device monitor
 ```
- The firmware uses a reusable ```ApiClient``` responsible for communication with the backend.
 
- The API client handles:
- - Sensor registration
- - Measurement submission
- - HTTP request
- - JSON payload construction
- - HTTP response handling
+The upload port is set to `/dev/ttyUSB0` in `platformio.ini`; change it for your machine. The PlatformIO IDE extension works as well.
 
-### 🤖 Firmware Architecture
-The ESP32 firmware uses an abstract ```Sensor``` interface.
+**How it behaves**
 
-This allows different sensor implementations to share the same interface.
-
+```text
+Boot ─► connect to Wi-Fi ─► register each sensor ─► every 3 seconds:
+                                                     read sensors ─► POST /api/measurements
 ```
+
+- If a request fails, the batch is kept and retried with exponential backoff (up to 60 seconds), and the sensors are registered again
+- If Wi-Fi drops, the firmware reconnects automatically
+
+**Sensors.** All sensors implement a common `Sensor` interface, so the main program does not care whether a sensor is fake or real. Adding a real sensor means implementing `read()` and creating it in `main.cpp`.
+
+```text
 Sensor
-│
-├── FakeDHTSensor
-│
-├── FakeDistanceSensor
-│
-└── Future Real Sensors
-    │
-    ├── DHT22
-    ├── HC-SR04
-    ├── PIR Motion Sensor
-    └── Other Sensors
-```
-The main application communicates with sensors through the common ```Sensor``` interface. This means the application does not need to know whether a sensor is Fake or Real. This architecture makes it easier to add new sensor implementations without significantly changing the rest of the application.
-
-### Fake Sensors
-Fake sensors are currently used for development and testing. 
-
-The project currently includes:
-- Fake DHT Sensor 
-- Fake Distance Sensor
-
-### Fake DHT Sensor
-Generates random: 
-- Temperature
-- Humidity 
-
-Example: 
-```
-temperature: 22.4 celsius
-humidity: 48.1 percent
-```
-### Fake Distance Sensor
-
-Generates random distance measurements.
-
-Example:
-```
-distance: 410.7 cm
-```
-Fake sensors allow the complete system to be tested without requiring physical hardware.
-
-Future real sensor implementations can use the same architecture.
-
-### 🔄 Sensor Registration Flow
-When the ESP32 starts, its sensors can register themselves with the backend. 
-```
-ESP32 starts
-      │
-      ▼
-Connect to Wi-Fi
-      │
-      ▼
-Register Sensors
-      │
-      ▼
-Backend checks Device
-      │
-      ▼
-Sensor exists?
-   │          │
-  Yes         No
-   │          │
-   ▼          ▼
-Return ID   Create Sensor
-              │
-              ▼
-          Return ID
-```
-The backend verifies that a sensor UID is not incorrectly associated with another device
-
-### 📊 Measurement Flow
-After sensors are registered: 
-```
-Sensor
-   │
-   ▼
-Read Data
-   │
-   ▼
-Create Measurement
-   │
-   ▼
-ESP32 ApiClient
-   │
-   ▼
-FastAPI Backend
-   │
-   ▼
-Validate Device and Sensor
-   │
-   ▼
-PostgreSQL
-```
-A single measurement batch can contain measurements from multiple sensors. 
-
-For example: 
-```
-ESP32
-│
-├── DHT Sensor
-│   ├── temperature
-│   └── humidity
-│
-└── Distance Sensor
-    └── distance
+├── FakeDHTSensor        temperature (celsius), humidity (percent)
+├── FakeDistanceSensor   distance (cm)
+└── real sensors (planned): DHT22, HC-SR04, PIR motion
 ```
 
-## 📋 Current ESP32 Features
-- [x] Wi-Fi connection
-- [x] HTTP communication with FastAPI
-- [x] JSON API requests
-- [x] Abstract Sensor interface
-- [x] Fake DHT Sensor
-- [x] Fake Distance Sensor
-- [x] Automatic sensor registration
-- [x] Sending multiple measurements
-- [x] Device and sensor validation
-- [x] Measurements stored in PostgreSQL
+## 🧪 Development
 
-## 🗺️ Development Roadmap
-The project is being developed in the following stages:
+**Tests.** Start PostgreSQL, then:
 
-### Project Setup
-- [x] Create GitHub repository
-- [x] Set up project structure
-- [x] Configure PostgreSQL
-- [x] Configure Docker
-- [x] Configure FastAPI
-- [x] Configure SQLAlchemy
-- [x] Configure Alembic
-- [x] Add user model
-- [x] Add authentication API
-- [x] Add JWT authentication
-- [x] Add role-based authorization
-
-### Backend
-- [x] Create FastAPI application
-- [x] Create Device model
-- [x] Create Sensor model
-- [x] Create Measurement model
-- [x] Create Device API
-- [x] Create Sensor API
-- [x] Create Measurement API
-- [x] Add Pydantic schemas
-- [x] Add API response schemas
-- [x] Organize endpoints using routers
-- [x] Add database dependency injection
-- [x] Add sensor/device ownership validation
-
-### Database
-- [x] PostgreSQL database
-- [x] Docker configuration
-- [x] SQLAlchemy models
-- [x] Alembic migrations
-- [x] Device to Sensor relationship
-- [x] Sensor to Measurement relationship
-
-### ESP32 Firmware
-- [x] PlatformIO setup
-- [x] Wi-Fi connection
-- [x] HTTP API communication
-- [x] JSON payloads
-- [x] Abstract Sensor interface
-- [x] Fake DHT Sensor
-- [x] Fake Distance Sensor
-- [x] Automatic sensor registration
-
-### Frontend
-- [ ] Set up React application
-- [ ] Create dashboard layout
-- [ ] Display devices 
-- [ ] Display sensors
-- [ ] Display latest measurements
-- [ ] Create charts for historical measurements
-- [ ] Add device management
-- [ ] Add admin functionality
-- [ ] Add device configuration interface
-
-### Security
-
-- [x] User authentication
-- [x] User accounts
-- [x] Password hashing
-- [x] JWT authentication
-- [x] Current user authentication
-- [x] Admin role support
-- [x] Role-based authorization
-- [ ] Device authentication
-- [ ] API authorization for IoT devices
-- [ ] Secure device registration
-
-## 📈 Current Status
-The backend and ESP32 firmware are currently communicating successfully.
-
-The current data flow is:
+```bash
+cd backend
+uv run pytest
 ```
-ESP32
-   │
-   ├── Sensor Registration
-   │
-   └── Measurement Submission
-            │
-            ▼
-        FastAPI API
-            │
-            ▼
-        PostgreSQL
+
+The tests run against a separate `<database name>_test` database (for example `iot_db_test`), which is created automatically. They never touch the development database. To use a different one, set `TEST_DATABASE_URL`; its name must end with `_test`.
+
+**Migrations.** From `backend/`:
+
+```bash
+uv run alembic revision --autogenerate -m "Describe the change"
+uv run alembic upgrade head
+uv run alembic current
 ```
-Multiple sensors can belong to a single ESP32 device, and each sensor can submit multiple measurements.
 
-The backend validates the relationship between devices and sensors before storing measurements.
+A model change needs a migration; CI fails if the models and migrations disagree.
 
-The backend and ESP32 firmware are communicating successfully, and the backend now includes JWT-based user authentication and role-based authorization.
+**Frontend checks.** From `frontend/`: `npm run lint` and `npm run build`.
 
-The next major step is to begin building the React dashboard.
+**Continuous integration.** `.github/workflows/ci.yml` runs on every pull request. It applies the migrations and checks that they match the models, runs the backend tests, lints and builds the frontend, and builds both Docker images.
+
+### Project structure
+
+```text
+iot-monitoring-system/
+├── backend/
+│   ├── app/
+│   │   ├── routers/          # HTTP layer: auth, devices, sensors, measurements
+│   │   ├── services/         # business logic
+│   │   ├── schemas/          # Pydantic request and response models (the API contract)
+│   │   ├── models.py         # SQLAlchemy models
+│   │   ├── exceptions.py     # domain exceptions, mapped to HTTP errors in main.py
+│   │   ├── auth.py           # current-user and admin dependencies
+│   │   ├── security.py       # password hashing and JWT
+│   │   ├── dependencies.py   # shared database-session dependency
+│   │   ├── database.py       # engine and session
+│   │   └── main.py           # FastAPI app, CORS, error handler
+│   ├── alembic/              # database migrations
+│   ├── tests/                # pytest suite: devices, device flow, auth
+│   ├── Dockerfile
+│   └── pyproject.toml
+├── frontend/
+│   ├── src/
+│   │   ├── pages/            # Devices, DeviceDashboard
+│   │   ├── components/       # DeviceCard, SensorCard, sidebar, theme toggle
+│   │   │   └── ui/           # shadcn/ui primitives
+│   │   └── services/api.ts   # all backend calls and API types
+│   ├── Dockerfile
+│   └── nginx.conf
+├── firmware/                 # ESP32 (PlatformIO)
+│   ├── include/secrets.h.example
+│   ├── src/                  # main.cpp, network/ApiClient, sensors/
+│   └── platformio.ini
+├── simulator/sensor_simulator.py
+├── .github/workflows/ci.yml
+├── docker-compose.yml
+└── README.md
+```
+
+## 🗺️ Roadmap
+
+**Done**
+
+- [x] Backend API for devices, sensors, measurements and authentication
+- [x] PostgreSQL with Alembic migrations
+- [x] ESP32 firmware with fake sensors, automatic sensor registration and retry with backoff
+- [x] Python sensor simulator
+- [x] Dashboard: searchable device list with status, add device, device page with its sensors, dark mode
+- [x] Backend tests, Docker images and CI
+
+**Next**
+
+- [ ] Show the latest measurements on the device page
+- [ ] Charts for historical data (the API already supports time ranges)
+- [ ] Delete devices from the dashboard (the API endpoint exists)
+- [ ] Login page, then enable the authentication guards and admin-only device management
+- [ ] Device authentication and secure device provisioning
+- [ ] Real sensors (DHT22, HC-SR04, PIR)
+
+**Later**
+
+- [ ] Pagination for the device and sensor lists
+- [ ] A health check that also verifies the database
 
 ## 👨‍💻 Author
 
