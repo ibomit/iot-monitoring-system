@@ -7,9 +7,6 @@
 #include "sensors/FakeDistanceSensor.h"
 #include "network/ApiClient.h"
 
-const char* SERVER_URL = 
-    "http://192.168.178.20:8000";
-
 const char* DEVICE_UID = 
     "esp32-001";
 
@@ -36,6 +33,7 @@ unsigned long nextMeasurementAt = 0;
 unsigned long retryDelayMs = MEASUREMENT_INTERVAL_MS;
 Measurement pendingMeasurements[MAX_MEASUREMENTS_PER_BATCH];
 int pendingMeasurementCount = 0;
+bool sensorsRegistered = false;
 
 void connectToWiFi() {
     if (WiFi.status() == WL_CONNECTED) {
@@ -69,6 +67,13 @@ unsigned long getRetryDelay(unsigned long currentDelay) {
     return currentDelay * 2;
 }
 
+bool registerSensors() {
+    bool dhtRegistered = apiClient.registerSensor(dhtSensor);
+    bool distanceRegistered = apiClient.registerSensor(distanceSensor);
+
+    return dhtRegistered && distanceRegistered;
+}
+
 void setup() {
     Serial.begin(115200);
     
@@ -76,16 +81,8 @@ void setup() {
     randomSeed(esp_random());
 
     connectToWiFi();
-    
-    // Register sensors
 
-    apiClient.registerSensor(
-        dhtSensor
-    );
-    
-    apiClient.registerSensor(
-        distanceSensor
-    );
+    sensorsRegistered = registerSensors();
 }
 
 void loop() {
@@ -99,6 +96,21 @@ void loop() {
     if (static_cast<long>(now - nextMeasurementAt) < 0) {
         delay(50);
         return;
+    }
+
+    if (!sensorsRegistered) {
+        sensorsRegistered = registerSensors();
+
+        if (!sensorsRegistered) {
+            Serial.print("Sensor registration failed. Retrying in ");
+            Serial.print(retryDelayMs);
+            Serial.println(" ms");
+            retryDelayMs = getRetryDelay(retryDelayMs);
+            nextMeasurementAt = millis() + retryDelayMs;
+            return;
+        }
+
+        retryDelayMs = MEASUREMENT_INTERVAL_MS;
     }
 
     if (pendingMeasurementCount == 0) {
@@ -126,6 +138,8 @@ void loop() {
         pendingMeasurementCount = 0;
         retryDelayMs = MEASUREMENT_INTERVAL_MS;
     } else {
+        // The backend may have lost the sensors (e.g. device recreated), so register again
+        sensorsRegistered = false;
         Serial.print("Retrying in ");
         Serial.print(retryDelayMs);
         Serial.println(" ms");

@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.measurement import MeasurementResponse
 
 
 class DeviceCreate(BaseModel):
-    device_uid: str
-    name: str
-    location: str
+    device_uid: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100)
+    location: str = Field(min_length=1, max_length=100)
 
 class DeviceResponse(BaseModel):
     model_config = ConfigDict(

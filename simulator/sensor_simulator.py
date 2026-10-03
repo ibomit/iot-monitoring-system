@@ -42,7 +42,7 @@ def register_sensors():
                 f"{sensor['sensor_uid']}"
             )
 
-        except httpx.RequestError as error:
+        except httpx.HTTPError as error:
             print(
                 f"Could not register sensor: {error}"
             )
@@ -109,9 +109,9 @@ while True:
         print("\nResponse:")
         print(response.json())
 
-    except httpx.RequestError as error:
+    except httpx.HTTPError as error:
         print(
-            f"Could not connect to backend: {error}"
+            f"Backend request failed: {error}"
         )
 
     time.sleep(5)

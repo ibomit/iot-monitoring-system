@@ -27,24 +27,10 @@ def register(
     data: UserCreate,
     db: DbSession,
 ):
-    user, result = user_service.create_user(
+    return user_service.create_user(
         db,
         data,
     )
-
-    if result == "username_exists":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
-        )
-
-    if result == "email_exists":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already exists",
-        )
-
-    return user
 
 
 @router.post(

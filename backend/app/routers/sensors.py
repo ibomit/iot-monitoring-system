@@ -89,37 +89,17 @@ def register_sensor(
     db: DbSession
 ):
 
-    sensor, result = sensor_service.register_sensor(
+    sensor, created = sensor_service.register_sensor(
         db,
         data
     )
 
-    if result == "device_not_found":
-
-        raise HTTPException(
-            status_code=404,
-            detail="Device not found"
-        )
-
-    if result == "wrong_device":
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Sensor UID already belongs "
-                "to another device"
-            )
-        )
-
-    if result == "created":
-
-        return {
-            "message": "Sensor registered",
-            "sensor_id": sensor.id
-        }
-
     return {
-        "message": "Sensor already registered",
+        "message": (
+            "Sensor registered"
+            if created
+            else "Sensor already registered"
+        ),
         "sensor_id": sensor.id
     }
 

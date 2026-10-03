@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
+from app.exceptions import BadRequestError, NotFoundError
 from app.schemas.sensor import SensorRegister
 
 
@@ -122,7 +123,7 @@ def register_sensor(
     )
 
     if device is None:
-        return None, "device_not_found"
+        raise NotFoundError("Device not found")
 
     # Find sensor
     sensor = get_sensor_by_uid(
@@ -143,11 +144,13 @@ def register_sensor(
         db.commit()
         db.refresh(sensor)
 
-        return sensor, "created"
+        return sensor, True
 
     # Sensor exists but belongs to another device
     if sensor.device_id != device.id:
-        return sensor, "wrong_device"
+        raise BadRequestError(
+            "Sensor UID already belongs to another device"
+        )
 
     # Sensor already exists on this device
-    return sensor, "already_exists"
+    return sensor, False

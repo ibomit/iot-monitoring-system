@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app import models
+from app.exceptions import ConflictError
 from app.schemas.user import UserCreate
 from app.security import hash_password, verify_password
 
@@ -35,15 +36,15 @@ def create_user(
         db,
         data.username
     )
-    if existing_username is not None: 
-        return None, "username_exists"
+    if existing_username is not None:
+        raise ConflictError("Username already exists")
 
     existing_email = get_user_by_email(
         db,
         data.email
     )
     if existing_email is not None:
-        return None, "email_exists"
+        raise ConflictError("Email already exists")
 
     user = models.User(
         username=data.username,
@@ -56,7 +57,7 @@ def create_user(
     db.commit()
     db.refresh(user)
 
-    return user, "created"
+    return user
 
     
 def authenticate_user(

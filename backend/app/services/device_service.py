@@ -1,8 +1,8 @@
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app import models
+from app.exceptions import ConflictError
 from app.schemas.device import DeviceCreate
 
 
@@ -38,10 +38,7 @@ def create_device(
     )
 
     if existing_device is not None:
-        raise HTTPException(
-            status_code=409,
-            detail="Device with this UID already exists."
-        )
+        raise ConflictError("Device with this UID already exists.")
 
     device = models.Device(
         device_uid=data.device_uid,
