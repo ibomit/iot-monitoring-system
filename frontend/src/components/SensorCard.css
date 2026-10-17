@@ -1,0 +1,219 @@
+.sensor-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.1rem;
+  color: var(--card-foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.sensor-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 8%);
+}
+
+/* An expanded card takes the whole row of the grid */
+.sensor-card--expanded {
+  grid-column: 1 / -1;
+}
+
+/* Header: the only clickable part of the card */
+.sensor-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: start;
+  background: none;
+  border: 0;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.sensor-card-header:focus-visible {
+  outline: 3px solid rgb(59 130 246 / 35%);
+  outline-offset: 4px;
+}
+
+.sensor-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  color: var(--primary);
+  background: var(--muted);
+  border-radius: 0.7rem;
+}
+
+.sensor-card-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.sensor-card-title {
+  min-width: 0;
+  flex: 1;
+}
+
+.sensor-card-title h3 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sensor-card-title span {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.15rem;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sensor-card-type {
+  flex-shrink: 0;
+  padding: 0.15rem 0.6rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--muted);
+  border-radius: 999px;
+}
+
+.sensor-card-chevron {
+  width: 1.1rem;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  transition: transform 180ms ease;
+}
+
+.sensor-card-header[aria-expanded="true"] .sensor-card-chevron {
+  transform: rotate(180deg);
+}
+
+/* Information and graph blocks, separated by a line */
+.sensor-card-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.sensor-card-section h4 {
+  margin: 0 0 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* One tile per metric */
+.sensor-measurements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sensor-measurements li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--muted);
+  border-radius: 0.65rem;
+}
+
+.sensor-measurement-metric {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.sensor-measurement-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sensor-measurement-value small {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.sensor-measurement-time {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.sensor-card-empty {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+/* Small cards: one small chart per metric */
+.sensor-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.8rem;
+}
+
+.sensor-chart-label {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+/* Expanded card: a tab per metric */
+.sensor-chart-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.sensor-chart-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-align: start;
+  text-transform: capitalize;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+
+.sensor-chart-tab strong {
+  color: var(--card-foreground);
+  font-size: 1.1rem;
+  text-transform: none;
+}
+
+.sensor-chart-tab[aria-selected="true"] {
+  background: var(--muted);
+  border-color: var(--primary);
+}
