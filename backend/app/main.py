@@ -48,7 +48,7 @@ CORS_ORIGINS = [
 app = FastAPI(
     title="IoT Monitoring System API",
     description="Backend API for managing IoT devices, sensors and measurements.",
-    version="1.0.0",
+    version="0.4.0",
     openapi_tags=tags_metadata
 )
 app.add_middleware(
