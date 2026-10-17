@@ -18,6 +18,37 @@ def get_measurements(
     )
 
 
+def get_latest_measurements_for_sensors(
+    db: Session,
+    sensor_ids: list[int],
+):
+    """Newest measurement per (sensor, metric), ordered by sensor then metric.
+
+    DISTINCT ON keeps exactly one row per group. The id tiebreak makes the
+    result deterministic when two rows share the same created_at.
+    """
+    if not sensor_ids:
+        return []
+
+    return (
+        db.query(models.Measurement)
+        .filter(
+            models.Measurement.sensor_id.in_(sensor_ids)
+        )
+        .distinct(
+            models.Measurement.sensor_id,
+            models.Measurement.metric,
+        )
+        .order_by(
+            models.Measurement.sensor_id,
+            models.Measurement.metric,
+            models.Measurement.created_at.desc(),
+            models.Measurement.id.desc(),
+        )
+        .all()
+    )
+
+
 def create_measurements(
     db: Session,
     data: MeasurementsCreate

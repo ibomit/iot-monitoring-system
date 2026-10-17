@@ -4,6 +4,8 @@ These pin the API contract: changing a status code or message here can break
 devices in the field.
 """
 
+from app import models
+
 
 def measurement(sensor_uid, value=21.5, metric="temperature", unit="celsius"):
     return {
@@ -155,6 +157,39 @@ def test_latest_device_measurements_returns_newest_per_metric(client, sensor):
 
     assert response.status_code == 200
     assert [m["value"] for m in response.json()] == [3.0]
+
+
+def test_latest_measurements_return_one_row_when_timestamps_tie(client, db, sensor):
+    sensor_row = (
+        db.query(models.Sensor)
+        .filter(models.Sensor.sensor_uid == sensor["sensor_uid"])
+        .one()
+    )
+    same_time = models.utcnow()
+
+    for value in (1.0, 2.0):
+        db.add(
+            models.Measurement(
+                sensor_id=sensor_row.id,
+                metric="temperature",
+                value=value,
+                unit="celsius",
+                created_at=same_time,
+            )
+        )
+    db.commit()
+
+    device_url = f"/api/devices/{sensor['device_uid']}"
+    sensor_url = f"/api/sensors/{sensor['sensor_uid']}"
+
+    device_latest = client.get(f"{device_url}/measurements/latest").json()
+    sensor_latest = client.get(f"{sensor_url}/measurements/latest").json()
+    dashboard = client.get(f"{device_url}/dashboard").json()
+
+    # The row inserted last (highest id) wins the tie.
+    assert [m["value"] for m in device_latest] == [2.0]
+    assert [m["value"] for m in sensor_latest] == [2.0]
+    assert [m["value"] for m in dashboard["sensors"][0]["latest_measurements"]] == [2.0]
 
 
 def test_sensor_measurements_respect_limit_and_order(client, sensor):
