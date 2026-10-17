@@ -4,7 +4,7 @@
 
 An end-to-end IoT monitoring system. ESP32 devices (or a Python simulator) send sensor measurements over HTTP to a FastAPI backend, which stores them in PostgreSQL and serves a React dashboard.
 
-> **Status:** under active development. Devices, sensors and measurements work end to end, and the dashboard lists devices and their sensors. Latest values, charts and the login screen are still to come (see the Roadmap below).
+> **Status:** under active development. Devices, sensors and measurements work end to end, and the dashboard lists devices and their sensors, with the latest values and live graphs of recent measurements. Time-range charts and the login screen are still to come (see the Roadmap below).
 
 Built as a personal full-stack and IoT portfolio project.
 
@@ -332,11 +332,11 @@ iot-monitoring-system/
 - [x] Python sensor simulator
 - [x] Dashboard: searchable device list with status, add device, device page with its sensors, dark mode
 - [x] Backend tests, Docker images and CI
+- [x] Device page: latest value of every metric and live graphs of recent measurements for each sensor
 
 **Next**
 
-- [ ] Show the latest measurements on the device page
-- [ ] Charts for historical data (the API already supports time ranges)
+- [ ] Time range selection for the charts (the API already supports start and end)
 - [ ] Delete devices from the dashboard (the API endpoint exists)
 - [ ] Login page, then enable the authentication guards and admin-only device management
 - [ ] Device authentication and secure device provisioning
