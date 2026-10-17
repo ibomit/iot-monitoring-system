@@ -1,9 +1,9 @@
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app import models
 from app.exceptions import ConflictError
 from app.schemas.device import DeviceCreate
+from app.services import measurement_service
 
 
 def get_devices(db: Session):
@@ -68,100 +68,25 @@ def get_latest_device_measurements(
     db: Session,
     device_id: int,
 ):
-    latest_measurements = (
-        db.query(
-            models.Sensor.id.label("sensor_id"),
-            models.Measurement.metric,
-            func.max(
-                models.Measurement.created_at
-            ).label("latest_created_at"),
-        )
-        .join(
-            models.Measurement,
-            models.Measurement.sensor_id == models.Sensor.id,
-        )
-        .filter(
+    sensor_ids = [
+        sensor_id
+        for (sensor_id,) in db.query(models.Sensor.id).filter(
             models.Sensor.device_id == device_id
         )
-        .group_by(
-            models.Sensor.id,
-            models.Measurement.metric,
-        )
-        .subquery()
-    )
+    ]
 
-    return (
-        db.query(models.Measurement)
-        .join(
-            latest_measurements,
-            (
-                models.Measurement.sensor_id
-                == latest_measurements.c.sensor_id
-            )
-            &
-            (
-                models.Measurement.metric
-                == latest_measurements.c.metric
-            )
-            &
-            (
-                models.Measurement.created_at
-                == latest_measurements.c.latest_created_at
-            ),
-        )
-        .order_by(
-            models.Measurement.sensor_id,
-            models.Measurement.metric,
-        )
-        .all()
+    return measurement_service.get_latest_measurements_for_sensors(
+        db,
+        sensor_ids,
     )
 
 def get_device_dashboard(
     db: Session,
     device: models.Device,
 ):
-    latest_measurements = (
-        db.query(
-            models.Measurement.sensor_id.label("sensor_id"),
-            models.Measurement.metric.label("metric"),
-            func.max(
-                models.Measurement.created_at
-            ).label("latest_created_at"),
-        )
-        .join(
-            models.Sensor,
-            models.Measurement.sensor_id == models.Sensor.id,
-        )
-        .filter(
-            models.Sensor.device_id == device.id,
-        )
-        .group_by(
-            models.Measurement.sensor_id,
-            models.Measurement.metric,
-        )
-        .subquery()
-    )
-
-    measurements = (
-        db.query(models.Measurement)
-        .join(
-            latest_measurements,
-            (
-                models.Measurement.sensor_id
-                == latest_measurements.c.sensor_id
-            )
-            &
-            (
-                models.Measurement.metric
-                == latest_measurements.c.metric
-            )
-            &
-            (
-                models.Measurement.created_at
-                == latest_measurements.c.latest_created_at
-            ),
-        )
-        .all()
+    measurements = measurement_service.get_latest_measurements_for_sensors(
+        db,
+        [sensor.id for sensor in device.sensors],
     )
 
     measurements_by_sensor = {}

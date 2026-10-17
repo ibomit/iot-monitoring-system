@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
 from app.exceptions import BadRequestError, NotFoundError
 from app.schemas.sensor import SensorRegister
+from app.services import measurement_service
 
 
 def get_sensors(
@@ -67,45 +67,9 @@ def get_latest_measurements(
     db: Session,
     sensor_id: int,
 ):
-    latest_measurements = (
-        db.query(
-            models.Measurement.metric,
-            func.max(
-                models.Measurement.created_at
-            ).label(
-                "latest_created_at"
-            ),
-        )
-        .filter(
-            models.Measurement.sensor_id == sensor_id
-        )
-        .group_by(
-            models.Measurement.metric
-        )
-        .subquery()
-    )
-
-    return (
-        db.query(models.Measurement)
-        .join(
-            latest_measurements,
-            (
-                models.Measurement.metric
-                == latest_measurements.c.metric
-            )
-            &
-            (
-                models.Measurement.created_at
-                == latest_measurements.c.latest_created_at
-            ),
-        )
-        .filter(
-            models.Measurement.sensor_id == sensor_id
-        )
-        .order_by(
-            models.Measurement.metric
-        )
-        .all()
+    return measurement_service.get_latest_measurements_for_sensors(
+        db,
+        [sensor_id],
     )
 
 
