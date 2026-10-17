@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft, Clock, Cpu, MapPin } from 'lucide-react'
 import {Button} from "@/components/ui/button"
 import {
   getDeviceDashboard,
@@ -12,6 +13,9 @@ import './DeviceDashboardPage.css'
 //   device: Device
 //   // onBack: () => void
 // }
+
+// How often the status, last seen time and latest values are refreshed
+const DASHBOARD_REFRESH_INTERVAL_MS = 5000
 
 function DeviceDashboard() {
 
@@ -27,10 +31,15 @@ function DeviceDashboard() {
     }
 
     let cancelled = false
+    let timeoutId: number | undefined
 
-    async function loadDashboard(uid: string) {
-      setLoading(true)
-      setError(null)
+    async function loadDashboard(uid: string, isFirstLoad: boolean) {
+      // Only the first load shows the loading state, refreshes happen silently
+      if (isFirstLoad) {
+        setLoading(true)
+        setError(null)
+      }
+      let notFound = false
       try {
         const data = await getDeviceDashboard(uid)
         if (cancelled) {
@@ -38,7 +47,10 @@ function DeviceDashboard() {
         }
         setDashboard(data)
         if (data === null) {
+          notFound = true
           setError('Device not found')
+        } else {
+          setError(null)
         }
       } catch {
         if (!cancelled) {
@@ -47,50 +59,90 @@ function DeviceDashboard() {
       } finally {
         if (!cancelled) {
           setLoading(false)
+          // Schedule the next refresh after this request finished, so requests
+          // never overlap. A device that does not exist is not polled.
+          if (!notFound) {
+            timeoutId = window.setTimeout(
+              () => void loadDashboard(uid, false),
+              DASHBOARD_REFRESH_INTERVAL_MS
+            )
+          }
         }
       }
     }
 
-    void loadDashboard(deviceUid)
+    void loadDashboard(deviceUid, true)
     return () => {
       cancelled = true
+      window.clearTimeout(timeoutId)
     }
   }, [deviceUid])
 
   return (
-    <main className="main">
+    <main className="dashboard-page">
       <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => navigate('/devices')}>
-        ← Back to devices
+        <ArrowLeft aria-hidden="true" />
+        Back to devices
       </Button>
 
-      {loading && <p>Loading dashboard...</p>}
+      {loading && <p className="dashboard-state">Loading dashboard...</p>}
 
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="dashboard-state dashboard-state--error">
+          {error}
+        </p>
+      )}
 
       {!loading && dashboard && (
-        <section>
-          <div className="dashboard-grid">
-            <div className="dashboard-device-information">
-
-              <h2>{dashboard.name}</h2>
-              <p>
-                <strong>Device:</strong> {dashboard.device_uid}
-              </p>
-              <p>
-                <strong>Location:</strong> {dashboard.location}
-              </p>
-              <p>
-                <strong>Status:</strong> {dashboard.status}
-              </p>
-              <p> {/*TODO: Add "registered_at" */}
-                <strong>Registered:</strong>
-              </p>
+        <>
+          <header className="dashboard-hero">
+            <div>
+              <p className="dashboard-eyebrow">Device dashboard</p>
+              <h1>{dashboard.name}</h1>
+              <p className="dashboard-uid">{dashboard.device_uid}</p>
             </div>
-            <div className="dashboard-sensors">
-              <h2>Sensors</h2>
-              <div className='devices-grid'>
+            <span className={`dashboard-status status-${dashboard.status}`}>
+              <span /> {dashboard.status}
+            </span>
+          </header>
+
+          {/* TODO: add "Registered" once the dashboard response includes created_at */}
+          <div className="dashboard-info">
+            <div className="dashboard-info-card">
+              <MapPin aria-hidden="true" />
+              <div>
+                <span>Location</span>
+                <strong>{dashboard.location}</strong>
+              </div>
+            </div>
+            <div className="dashboard-info-card">
+              <Clock aria-hidden="true" />
+              <div>
+                <span>Last seen</span>
+                <strong>
+                  {dashboard.last_seen_at
+                    ? new Date(dashboard.last_seen_at).toLocaleString()
+                    : 'Never'}
+                </strong>
+              </div>
+            </div>
+            <div className="dashboard-info-card">
+              <Cpu aria-hidden="true" />
+              <div>
+                <span>Sensors</span>
+                <strong>{dashboard.sensors.length}</strong>
+              </div>
+            </div>
+          </div>
+
+          <section className="dashboard-sensors">
+            <h2>Sensors</h2>
+            {dashboard.sensors.length > 0 ? (
+              <div className="dashboard-sensor-grid">
                 {dashboard.sensors.map(
                   (sensor) => (
                     <SensorCard
@@ -99,9 +151,13 @@ function DeviceDashboard() {
                   )
                 )}
               </div>
-            </div>
-          </div>
-        </section>
+            ) : (
+              <p className="dashboard-state">
+                No sensors yet. They appear once the device registers them.
+              </p>
+            )}
+          </section>
+        </>
       )}
     </main>
   )
