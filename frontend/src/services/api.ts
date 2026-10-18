@@ -142,6 +142,57 @@ export async function getDeviceDashboard(
 
 }
 
+export async function getLatestSensorMeasurements(
+    sensorUid: string
+) : Promise<IMeasurement[]> {
+    const response = await fetch(
+        `${API_BASE_URL}/api/sensors/${encodeURIComponent(sensorUid)}/measurements/latest`
+    )
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(
+            typeof errorData?.detail === 'string'
+                ? errorData.detail
+                : 'Failed to fetch latest sensor measurements'
+        )
+    }
+
+    return response.json()
+}
+
+export async function getSensorMeasurements(
+    sensorUid: string,
+    limit: number = 10,
+    start: string | null = null,
+    end: string | null = null
+): Promise<IMeasurement[]> {
+    // The API returns the newest measurements first.
+    // start/end must be ISO 8601 strings, ideally date.toISOString() (UTC, ends in Z).
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (start) {
+        params.set('start', start)
+    }
+    if (end) {
+        params.set('end', end)
+    }
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/sensors/${encodeURIComponent(sensorUid)}/measurements?${params}`
+    )
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(
+            typeof errorData?.detail === 'string'
+                ? errorData.detail
+                : 'Failed to fetch sensor measurements'
+        )
+    }
+
+    return response.json()
+}
+
 
 
 
