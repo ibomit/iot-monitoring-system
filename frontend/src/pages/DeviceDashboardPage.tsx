@@ -110,7 +110,6 @@ function DeviceDashboard() {
             </span>
           </header>
 
-          {/* TODO: add "Registered" once the dashboard response includes created_at */}
           <div className="dashboard-info">
             <div className="dashboard-info-card">
               <MapPin aria-hidden="true" />
