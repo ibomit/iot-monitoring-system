@@ -1,5 +1,7 @@
-from datetime import datetime
+import math
+from datetime import datetime, timedelta
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
@@ -27,6 +29,59 @@ def get_sensor_by_uid(
             models.Sensor.sensor_uid == sensor_uid
         )
         .first()
+    )
+
+def get_sensor_measurement_buckets(
+    db: Session,
+    sensor_uid: str,
+    start: datetime,
+    end: datetime | None = None,
+    max_points: int = 300
+):
+    sensor = get_sensor_by_uid(db, sensor_uid)
+    if sensor is None:
+        raise NotFoundError("Sensor not found")
+
+    if end is None:
+        end = models.utcnow()
+    if start >= end:
+        raise BadRequestError("Start time must be before end time")
+
+    # Round up so the range never needs more than max_points buckets
+    total_seconds = (end - start).total_seconds()
+    bucket_seconds = max(1, math.ceil(total_seconds / max_points))
+
+    # date_bin rounds every timestamp down to the start of its bucket,
+    # counted from start. The same expression is used to select, group and sort.
+    bucket_start = func.date_bin(
+        timedelta(seconds=bucket_seconds),
+        models.Measurement.created_at,
+        start,
+    )
+
+    return (
+        db.query(
+            models.Measurement.metric,
+            models.Measurement.unit,
+            bucket_start.label("bucket_start"),
+            func.avg(models.Measurement.value).label("value"),
+            func.count().label("count"),
+        )
+        .filter(
+            models.Measurement.sensor_id == sensor.id,
+            models.Measurement.created_at >= start,
+            models.Measurement.created_at <= end,
+        )
+        .group_by(
+            models.Measurement.metric,
+            models.Measurement.unit,
+            bucket_start,
+        )
+        .order_by(
+            models.Measurement.metric,
+            bucket_start,
+        )
+        .all()
     )
 
 

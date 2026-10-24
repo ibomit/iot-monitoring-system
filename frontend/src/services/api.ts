@@ -23,6 +23,13 @@ export interface IMeasurement {
     unit: string
     created_at: string
 }
+export interface IMeasurementBucket {
+    metric: string
+    unit: string
+    bucket_start: string
+    value: number,
+    count: number
+}
 export interface IDeviceDashboard {
     device_uid: string
     name: string
@@ -163,7 +170,7 @@ export async function getLatestSensorMeasurements(
 
 export async function getSensorMeasurements(
     sensorUid: string,
-    limit: number = 10,
+    limit: number = 100,
     start: string | null = null,
     end: string | null = null
 ): Promise<IMeasurement[]> {
@@ -193,6 +200,36 @@ export async function getSensorMeasurements(
     return response.json()
 }
 
+export async function getSensorMeasurementBuckets(
+    sensorUid: string,
+    start: string,
+    end: string | null = null,
+    maxPoints: number = 300
+): Promise<IMeasurementBucket[]> {
+    // Averages per metric over time buckets, oldest first.
+    // start/end must be ISO 8601 strings, ideally date.toISOString() (UTC, ends in Z).
+    const params = new URLSearchParams({
+        start,
+        max_points: String(maxPoints),
+    })
+    if (end) {
+        params.set('end', end)
+    }
 
+    const response = await fetch(
+        `${API_BASE_URL}/api/sensors/${encodeURIComponent(sensorUid)}/measurements/buckets?${params}`
+    )
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(
+            typeof errorData?.detail === 'string'
+                ? errorData.detail
+                : 'Failed to fetch sensor measurement buckets'
+        )
+    }
+
+    return response.json()
+}
 
 

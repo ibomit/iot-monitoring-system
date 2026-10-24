@@ -284,7 +284,6 @@ function DevicesTable({ devices, error, loading, hasSearchQuery, onRetry }: Devi
                         <DeviceCard
                             key={device.id}
                             device={device}
-                        // onClick={() => { }}
                         />
                     ))}
                 </div>

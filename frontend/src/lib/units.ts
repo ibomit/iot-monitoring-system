@@ -8,7 +8,9 @@ const UNIT_SYMBOLS: Record<string, string> = {
     cm: 'cm',
 }
 
+// Always one decimal, so 22 is shown as 22.0 like the other values
 const numberFormat = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 1,
     maximumFractionDigits: 1,
 })
 

@@ -31,6 +31,18 @@ class MeasurementResponse(BaseModel):
     created_at: datetime
 
 
+class MeasurementBucketResponse(BaseModel):
+    """Bucket of measurements for a specific metric and time range."""
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+    metric: str
+    unit: str
+    bucket_start: datetime
+    value: float
+    count: int
+
+
 class MeasurementsCreateResponse(BaseModel):
 
     message: str

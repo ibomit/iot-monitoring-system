@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import DbSession
-from app.schemas.measurement import MeasurementResponse
+from app.schemas.measurement import MeasurementResponse, MeasurementBucketResponse
 from app.schemas.sensor import SensorRegister, SensorRegisterResponse, SensorResponse
 from app.services import sensor_service
 
@@ -80,6 +80,30 @@ def get_sensor_measurements(
         end=end
     )
 
+@router.get(
+    "/{sensor_uid}/measurements/buckets",
+    response_model=list[MeasurementBucketResponse]
+)
+def get_sensor_measurement_buckets(
+    sensor_uid: str,
+    db: DbSession,
+    start: datetime,
+    end: datetime | None = None,
+    max_points: int = Query(
+        default=300,
+        ge=10,
+        le=1000,
+    ),
+):
+    return sensor_service.get_sensor_measurement_buckets(
+        db=db,
+        sensor_uid=sensor_uid,
+        start=start,
+        end=end,
+        max_points=max_points,
+    )
+
+
 @router.post(
     "/register",
     response_model=SensorRegisterResponse
@@ -111,3 +135,4 @@ def register_sensor(
 def get_sensors(db: DbSession):
 
     return sensor_service.get_sensors(db)
+
