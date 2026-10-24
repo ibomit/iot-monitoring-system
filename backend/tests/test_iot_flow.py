@@ -4,6 +4,8 @@ These pin the API contract: changing a status code or message here can break
 devices in the field.
 """
 
+from datetime import datetime, timedelta
+
 from app import models
 
 
@@ -224,3 +226,119 @@ def test_list_measurements_is_limited(client, sensor):
     assert len(client.get("/api/measurements", params={"limit": 2}).json()) == 2
     assert client.get("/api/measurements", params={"limit": 0}).status_code == 422
     assert client.get("/api/measurements", params={"limit": 5000}).status_code == 422
+
+
+# --- measurement buckets (averages over time, used by the charts) ----------
+
+
+def add_measurement(db, sensor_uid, metric, value, created_at):
+    sensor_row = (
+        db.query(models.Sensor)
+        .filter(models.Sensor.sensor_uid == sensor_uid)
+        .one()
+    )
+    db.add(
+        models.Measurement(
+            sensor_id=sensor_row.id,
+            metric=metric,
+            value=value,
+            unit="u",
+            created_at=created_at,
+        )
+    )
+    db.commit()
+
+
+def test_buckets_average_every_metric_per_time_bucket(client, db, sensor):
+    base = models.utcnow().replace(microsecond=0) - timedelta(hours=1)
+    uid = sensor["sensor_uid"]
+
+    add_measurement(db, uid, "temperature", 10.0, base + timedelta(seconds=10))
+    add_measurement(db, uid, "temperature", 20.0, base + timedelta(seconds=20))
+    add_measurement(db, uid, "temperature", 30.0, base + timedelta(seconds=70))
+    add_measurement(db, uid, "humidity", 50.0, base + timedelta(seconds=15))
+
+    # 600 seconds with at most 10 points gives buckets of 60 seconds
+    response = client.get(
+        f"/api/sensors/{uid}/measurements/buckets",
+        params={
+            "start": base.isoformat(),
+            "end": (base + timedelta(seconds=600)).isoformat(),
+            "max_points": 10,
+        },
+    )
+
+    assert response.status_code == 200
+    buckets = [
+        (
+            item["metric"],
+            datetime.fromisoformat(item["bucket_start"]),
+            item["value"],
+            item["count"],
+        )
+        for item in response.json()
+    ]
+    assert buckets == [
+        ("humidity", base, 50.0, 1),
+        ("temperature", base, 15.0, 2),
+        ("temperature", base + timedelta(seconds=60), 30.0, 1),
+    ]
+
+
+def test_buckets_end_defaults_to_now(client, db, sensor):
+    uid = sensor["sensor_uid"]
+    add_measurement(
+        db, uid, "temperature", 21.0, models.utcnow() - timedelta(minutes=5)
+    )
+
+    response = client.get(
+        f"/api/sensors/{uid}/measurements/buckets",
+        params={"start": (models.utcnow() - timedelta(hours=1)).isoformat()},
+    )
+
+    assert response.status_code == 200
+    assert [item["value"] for item in response.json()] == [21.0]
+
+
+def test_buckets_of_a_range_without_data_are_empty(client, sensor):
+    response = client.get(
+        f"/api/sensors/{sensor['sensor_uid']}/measurements/buckets",
+        params={"start": (models.utcnow() - timedelta(hours=1)).isoformat()},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_buckets_reject_start_after_end(client, sensor):
+    response = client.get(
+        f"/api/sensors/{sensor['sensor_uid']}/measurements/buckets",
+        params={"start": "2026-10-02T00:00:00Z", "end": "2026-10-01T00:00:00Z"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Start time must be before end time"
+
+
+def test_buckets_for_unknown_sensor_return_404(client):
+    response = client.get(
+        "/api/sensors/missing/measurements/buckets",
+        params={"start": "2026-10-01T00:00:00Z"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Sensor not found"
+
+
+def test_buckets_validate_the_parameters(client, sensor):
+    url = f"/api/sensors/{sensor['sensor_uid']}/measurements/buckets"
+
+    assert client.get(url).status_code == 422
+    assert (
+        client.get(url, params={"start": "2026-10-01T00:00:00Z", "max_points": 5}).status_code
+        == 422
+    )
+    assert (
+        client.get(url, params={"start": "2026-10-01T00:00:00Z", "max_points": 5000}).status_code
+        == 422
+    )
