@@ -1,47 +1,68 @@
 import { useEffect, useState } from 'react'
 import { Activity, ChevronDown } from 'lucide-react'
 import {
-    getSensorMeasurements,
-    type IMeasurement,
+    getSensorMeasurementBuckets,
+    type IMeasurementBucket,
     type ISensor,
 } from '../services/api'
 import { formatUnit, formatValue } from '@/lib/units'
+import { MAX_POINTS, RANGES, type RangeKey } from '@/lib/ranges'
 import './SensorCard.css'
 import MeasurementChart from './MeasurementChart'
 
 
 interface ISensorCardProps {
     sensor: ISensor
+    range: RangeKey
 }
 
-// History points requested per metric (the API limit counts all metrics together)
-const POINTS_PER_METRIC = 100
-const MAX_LIMIT = 1000
+// The fetched buckets together with the time window they belong to
+interface IChartData {
+    buckets: IMeasurementBucket[]
+    start: number
+    end: number
+}
 
 // How often the graph asks for new measurements
 const REFRESH_INTERVAL_MS = 5000
 
 function SensorCard({
-    sensor
+    sensor,
+    range
 }: ISensorCardProps) {
 
     const [expanded, setExpanded] = useState(false)
-    const [history, setHistory] = useState<IMeasurement[]>([])
+    const [chartData, setChartData] = useState<IChartData | null>(null)
     const [historyLoading, setHistoryLoading] = useState(true)
     const [historyError, setHistoryError] = useState<string | null>(null)
-
-    const metricCount = Math.max(sensor.latest_measurements.length, 1)
-    const limit = Math.min(POINTS_PER_METRIC * metricCount, MAX_LIMIT)
 
     useEffect(() => {
         let cancelled = false
         let timeoutId: number | undefined
 
-        async function loadHistory() {
+        async function loadBuckets(isFirstLoad: boolean) {
+            // A new range shows the loading state, not the graph of the old range
+            if (isFirstLoad) {
+                setHistoryLoading(true)
+                setHistoryError(null)
+                setChartData(null)
+            }
             try {
-                const data = await getSensorMeasurements(sensor.sensor_uid, limit)
+                // The window moves forward on every refresh, so it is computed here
+                const end = new Date()
+                const start = new Date(end.getTime() - RANGES[range].ms)
+                const buckets = await getSensorMeasurementBuckets(
+                    sensor.sensor_uid,
+                    start.toISOString(),
+                    end.toISOString(),
+                    MAX_POINTS
+                )
                 if (!cancelled) {
-                    setHistory(data)
+                    setChartData({
+                        buckets,
+                        start: start.getTime(),
+                        end: end.getTime(),
+                    })
                     setHistoryError(null)
                 }
             } catch {
@@ -53,17 +74,20 @@ function SensorCard({
                     setHistoryLoading(false)
                     // Schedule the next request only after this one finished,
                     // so a slow response never overlaps with the next request
-                    timeoutId = window.setTimeout(loadHistory, REFRESH_INTERVAL_MS)
+                    timeoutId = window.setTimeout(
+                        () => void loadBuckets(false),
+                        REFRESH_INTERVAL_MS
+                    )
                 }
             }
         }
 
-        void loadHistory()
+        void loadBuckets(true)
         return () => {
             cancelled = true
             window.clearTimeout(timeoutId)
         }
-    }, [sensor.sensor_uid, limit])
+    }, [sensor.sensor_uid, range])
 
     return (
         <div
@@ -125,8 +149,14 @@ function SensorCard({
                 )}
                 {historyError && <p role="alert">{historyError}</p>}
                 {/* Keep showing the last data if a refresh fails */}
-                {!historyLoading && (history.length > 0 || !historyError) && (
-                    <MeasurementChart data={history} compact={!expanded} />
+                {!historyLoading && chartData !== null && (
+                    <MeasurementChart
+                        data={chartData.buckets}
+                        latest={sensor.latest_measurements}
+                        start={chartData.start}
+                        end={chartData.end}
+                        compact={!expanded}
+                    />
                 )}
             </section>
         </div>

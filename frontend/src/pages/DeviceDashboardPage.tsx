@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Clock, Cpu, MapPin } from 'lucide-react'
-import {Button} from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   getDeviceDashboard,
   type IDeviceDashboard,
 } from '../services/api'
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { RANGE_KEYS, type RangeKey } from '@/lib/ranges'
 
 import { useNavigate, useParams } from 'react-router-dom'
 import SensorCard from '../components/SensorCard'
@@ -20,6 +22,7 @@ const DASHBOARD_REFRESH_INTERVAL_MS = 5000
 function DeviceDashboard() {
 
   const [dashboard, setDashboard] = useState<IDeviceDashboard | null>(null)
+  const [range, setRange] = useState<RangeKey>('1h')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -135,18 +138,39 @@ function DeviceDashboard() {
                 <span>Sensors</span>
                 <strong>{dashboard.sensors.length}</strong>
               </div>
+
             </div>
           </div>
 
           <section className="dashboard-sensors">
-            <h2>Sensors</h2>
+            <div className="dashboard-sensors-header">
+              <h2>Sensors</h2>
+              <ToggleGroup
+                variant="outline"
+                aria-label="Time range"
+                value={[range]}
+                onValueChange={(value) => {
+                  // Clicking the active button reports an empty selection: ignore it
+                  if (value.length > 0) {
+                    setRange(value[0] as RangeKey)
+                  }
+                }}
+              >
+                {RANGE_KEYS.map((option) => (
+                  <ToggleGroupItem key={option} value={option}>
+                    {option}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
             {dashboard.sensors.length > 0 ? (
               <div className="dashboard-sensor-grid">
                 {dashboard.sensors.map(
                   (sensor) => (
                     <SensorCard
                       key={sensor.sensor_uid}
-                      sensor={sensor} />
+                      sensor={sensor}
+                      range={range} />
                   )
                 )}
               </div>

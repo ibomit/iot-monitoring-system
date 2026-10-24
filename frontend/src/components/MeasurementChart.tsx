@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import type { IMeasurement } from '../services/api'
+import type { IMeasurement, IMeasurementBucket } from '../services/api'
 import { formatMeasurement, formatUnit } from '@/lib/units'
+import { getBucketMs } from '@/lib/ranges'
 import {
     ChartContainer,
     ChartTooltip,
@@ -9,46 +10,84 @@ import {
     type ChartConfig,
 } from '@/components/ui/chart'
 
+
+// A null value is a gap: the line is not drawn through it
 interface IChartPoint {
     time: number
-    value: number
+    value: number | null
 }
 
 interface IMetricChartProps {
     points: IChartPoint[]
     label: string
     color: string
+    start: number
+    end: number
     compact: boolean
 }
 
 interface IMeasurementChartProps {
-    data: IMeasurement[]
+    data: IMeasurementBucket[]
+    // The latest value of every metric of the sensor (tabs, units, metric list)
+    latest: IMeasurement[]
+    // The time window of the data, in milliseconds
+    start: number
+    end: number
     compact: boolean
 }
 
-// How many points the small chart of one metric shows
-const COMPACT_POINTS = 20
+const DAY_MS = 24 * 60 * 60 * 1000
 
-// The API returns measurements of all metrics mixed together, newest first.
-// A chart needs one metric at a time, oldest first, as plain {time, value}.
-function toPoints(data: IMeasurement[], metric: string): IChartPoint[] {
-    return data
-        .filter((measurement) => measurement.metric === metric)
-        .map((measurement) => ({
-            time: new Date(measurement.created_at).getTime(),
-            value: measurement.value,
+// The shortest time without data that counts as a gap. Readings never arrive
+// exactly on time, so with narrow buckets (about the sending interval) an
+// occasional empty bucket is normal and must not break the line.
+const MIN_GAP_MS = 30 * 1000
+
+// The buckets of all metrics come mixed together. A chart needs one metric at a
+// time, oldest first, as plain {time, value}. The API leaves out buckets without
+// readings, so a long jump between two buckets is a gap: a null point is inserted
+// there so the line breaks instead of joining the two points.
+function toPoints(
+    data: IMeasurementBucket[],
+    metric: string,
+    bucketMs: number
+): IChartPoint[] {
+    const buckets = data
+        .filter((bucket) => bucket.metric === metric)
+        .map((bucket) => ({
+            time: new Date(bucket.bucket_start).getTime(),
+            value: bucket.value,
         }))
         .sort((a, b) => a.time - b.time)
+
+    // Three missing buckets, but at least MIN_GAP_MS
+    const gapMs = Math.max(bucketMs * 3, MIN_GAP_MS)
+
+    const points: IChartPoint[] = []
+    buckets.forEach((bucket, index) => {
+        const previous = buckets[index - 1]
+        if (previous !== undefined && bucket.time - previous.time > gapMs) {
+            points.push({ time: previous.time + bucketMs, value: null })
+        }
+        points.push(bucket)
+    })
+    return points
 }
 
 function chartColor(index: number): string {
     return `var(--chart-${(index % 5) + 1})`
 }
 
-function MetricChart({ points, label, color, compact }: IMetricChartProps) {
+function MetricChart({ points, label, color, start, end, compact }: IMetricChartProps) {
     const config: ChartConfig = {
         value: { label, color },
     }
+
+    // Ranges of a day or more need the weekday on the ticks, shorter ones only the time
+    const tickOptions: Intl.DateTimeFormatOptions =
+        end - start >= DAY_MS
+            ? { weekday: 'short', hour: '2-digit', minute: '2-digit' }
+            : { hour: '2-digit', minute: '2-digit' }
 
     return (
         <ChartContainer
@@ -72,17 +111,15 @@ function MetricChart({ points, label, color, compact }: IMetricChartProps) {
                     dataKey="time"
                     type="number"
                     scale="time"
-                    domain={['dataMin', 'dataMax']}
+                    // The selected window, so time without data stays empty
+                    domain={[start, end]}
                     hide={compact}
                     tickLine={true}
                     axisLine={true}
                     tickMargin={8}
                     minTickGap={32}
                     tickFormatter={(value) =>
-                        new Date(value).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        })
+                        new Date(value).toLocaleString([], tickOptions)
                     }
                 />
                 <YAxis
@@ -100,77 +137,85 @@ function MetricChart({ points, label, color, compact }: IMetricChartProps) {
                     domain={['auto', 'auto']}
                 />
                 {/* {!compact && ( */}
-                    <ChartTooltip
-                        content={
-                            <ChartTooltipContent
-                                // The first argument is the config label, not the X value:
-                                // read the timestamp from the data point instead
-                                labelFormatter={(_, payload) =>
-                                    new Date(payload[0].payload.time).toLocaleString()
-                                }
-                            />
-                        }
-                    />
+                <ChartTooltip
+                    content={
+                        <ChartTooltipContent
+                            // The first argument is the config label, not the X value:
+                            // read the timestamp from the data point instead
+                            labelFormatter={(_, payload) =>
+                                new Date(payload[0].payload.time).toLocaleString()
+                            }
+                        />
+                    }
+                />
                 {/* )} */}
                 <Line
                     dataKey="value"
                     type="monotone"
                     stroke="var(--color-value)"
                     strokeWidth={2}
-                    dot={false}
+                    // Few points: draw them, so a single reading between two gaps is visible
+                    dot={!compact && points.length <= 30}
+                    connectNulls={false}
                     isAnimationActive={false}
                 />
             </LineChart>
+
         </ChartContainer>
     )
 }
 
-export function MeasurementChart({ data, compact }: IMeasurementChartProps) {
+export function MeasurementChart({
+    data,
+    latest,
+    start,
+    end,
+    compact,
+}: IMeasurementChartProps) {
     const [selectedMetric, setSelectedMetric] = useState<string | null>(null)
 
-    // Distinct metrics of this sensor, e.g. ["temperature", "humidity"]
-    const metrics = useMemo(
-        () => [...new Set(data.map((measurement) => measurement.metric))],
-        [data]
-    )
+    const bucketMs = getBucketMs(end - start)
 
-    // The newest measurement of every metric (shown on the tabs)
-    const latestByMetric = useMemo(() => {
-        const latest: Record<string, IMeasurement> = {}
-        for (const measurement of data) {
-            const current = latest[measurement.metric]
-            if (
-                current === undefined ||
-                new Date(measurement.created_at) > new Date(current.created_at)
-            ) {
-                latest[measurement.metric] = measurement
-            }
-        }
-        return latest
-    }, [data])
+    // The latest value of every metric of the sensor. The metrics (and so the tabs)
+    // come from here and not from the buckets, so they stay the same when a range
+    // has no data for a metric.
+    const latestByMetric = useMemo(
+        () => Object.fromEntries(latest.map((measurement) => [measurement.metric, measurement])),
+        [latest]
+    )
+    const metrics = Object.keys(latestByMetric)
 
     if (metrics.length === 0) {
         return <p className="sensor-card-empty">No measurements yet</p>
     }
 
+    if (data.length === 0) {
+        return <p className="sensor-card-empty">No measurements in this range</p>
+    }
+
     // Small card: one small chart per metric
     if (compact) {
         return (
-            <div className="sensor-charts">
-                {metrics.map((metric, index) => (
-                    <div key={metric} className="sensor-chart-compact">
-                        <span className="sensor-chart-label">
-                            {metric} ({formatUnit(latestByMetric[metric].unit)})
-                        </span>
-                        <MetricChart
-                            points={toPoints(data, metric).slice(-COMPACT_POINTS)}
-                            label={metric}
-                            color={chartColor(index)}
-                            compact
-                        />
-                    </div>
-                ))}
-            </div>
+            <>
+                <div className="sensor-charts">
+                    {metrics.map((metric, index) => (
+                        <div key={metric} className="sensor-chart-compact">
+                            <span className="sensor-chart-label">
+                                {metric} ({formatUnit(latestByMetric[metric].unit)})
+                            </span>
+
+                            <MetricChart
+                                points={toPoints(data, metric, bucketMs)}
+                                label={metric}
+                                color={chartColor(index)}
+                                start={start}
+                                end={end}
+                                compact
+                            />
+                        </div>
+                    ))}
+                </div>
+            </>
         )
     }
 
@@ -201,9 +246,11 @@ export function MeasurementChart({ data, compact }: IMeasurementChartProps) {
                 ))}
             </div>
             <MetricChart
-                points={toPoints(data, activeMetric)}
+                points={toPoints(data, activeMetric, bucketMs)}
                 label={`${activeMetric} (${formatUnit(latestByMetric[activeMetric].unit)})`}
                 color={chartColor(activeIndex)}
+                start={start}
+                end={end}
                 compact={false}
             />
         </div>

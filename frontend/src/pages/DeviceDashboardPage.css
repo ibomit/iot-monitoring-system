@@ -126,9 +126,18 @@
   white-space: nowrap;
 }
 
-/* Sensors */
-.dashboard-sensors h2 {
-  margin: 0 0 0.8rem;
+/* Sensors: heading on the left, time range on the right */
+.dashboard-sensors-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.dashboard-sensors-header h2 {
+  margin: 0;
   font-size: 1.15rem;
 }
 
