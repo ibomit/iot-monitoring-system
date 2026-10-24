@@ -1,3 +1,4 @@
+import math
 import random
 import time
 
@@ -48,20 +49,50 @@ def register_sensors():
             )
 
 
+# The last values: every reading continues from the previous one, like a real
+# sensor, instead of jumping to a new random value.
+state = {
+    "temperature": 22.0,
+    "humidity": 45.0,
+    "distance": 120.0,
+    "distance_target": 120.0,
+}
+
+# A real day has 24 hours, so the "day" is compressed into 20 minutes to give
+# the charts a visible shape. Warmer air is drier: humidity moves the opposite way.
+DEMO_CYCLE_SECONDS = 20 * 60
+PULL = 0.05  # how strongly a value is pulled back toward its slowly moving target
+
+
 def generate_measurements():
-    temperature = round(
-        random.uniform(20, 30),
-        2,
-    )
+    phase = math.sin(2 * math.pi * (time.time() % DEMO_CYCLE_SECONDS) / DEMO_CYCLE_SECONDS)
 
-    humidity = round(
-        random.uniform(30, 70),
-        2,
-    )
+    temperature_target = 22.0 + 1.5 * phase
+    humidity_target = 45.0 - 4.0 * phase
 
+    # A small random step, pulled toward the target, so the value drifts
+    state["temperature"] += (
+        random.uniform(-0.1, 0.1)
+        + (temperature_target - state["temperature"]) * PULL
+    )
+    state["humidity"] += (
+        random.uniform(-0.15, 0.15)
+        + (humidity_target - state["humidity"]) * PULL
+    )
+    state["humidity"] = min(70.0, max(30.0, state["humidity"]))
+
+    # Now and then something moves in front of the sensor: a new target
+    # distance. Otherwise the distance stays where it is.
+    if random.random() < 0.02:
+        state["distance_target"] = random.uniform(50, 250)
+    difference = state["distance_target"] - state["distance"]
+    state["distance"] += min(5.0, max(-5.0, difference))
+
+    temperature = round(state["temperature"], 1)
+    humidity = round(state["humidity"], 1)
     distance = round(
-        random.uniform(100, 500),
-        2,
+        min(400.0, max(2.0, state["distance"] + random.uniform(-0.3, 0.3))),
+        1,
     )
 
     return {
