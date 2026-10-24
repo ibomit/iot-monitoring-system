@@ -136,7 +136,6 @@ function MetricChart({ points, label, color, start, end, compact }: IMetricChart
                     axisLine={true}
                     domain={['auto', 'auto']}
                 />
-                {/* {!compact && ( */}
                 <ChartTooltip
                     content={
                         <ChartTooltipContent
@@ -148,7 +147,6 @@ function MetricChart({ points, label, color, start, end, compact }: IMetricChart
                         />
                     }
                 />
-                {/* )} */}
                 <Line
                     dataKey="value"
                     type="monotone"

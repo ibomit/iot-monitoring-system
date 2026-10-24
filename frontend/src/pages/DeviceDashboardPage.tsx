@@ -11,10 +11,6 @@ import { RANGE_KEYS, type RangeKey } from '@/lib/ranges'
 import { useNavigate, useParams } from 'react-router-dom'
 import SensorCard from '../components/SensorCard'
 import './DeviceDashboardPage.css'
-// interface DeviceDashboardProps {
-//   device: Device
-//   // onBack: () => void
-// }
 
 // How often the status, last seen time and latest values are refreshed
 const DASHBOARD_REFRESH_INTERVAL_MS = 5000
