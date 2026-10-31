@@ -4,11 +4,8 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from dotenv import load_dotenv
 from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
 
 load_dotenv()
-
-password_hash = PasswordHash.recommended()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -23,40 +20,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 )
 
 
-def hash_password(password: str) -> str: 
-    return password_hash.hash(password)
-
-
-def verify_password(
-    password: str,
-    hashed_password: str,
-) -> bool:
-    return password_hash.verify(
-        password,
-        hashed_password,
-    )
-
-
-def create_access_token(
-    data: dict
-) -> str:
-    payload = data.copy()
-
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-
-    payload.update(
-        {
-            "exp": expire,
-        }
-    )
-
-    return jwt.encode(
-        payload,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
+def create_access_token(user_id: int) -> str:
+    # The JWT spec says "sub" is a string, so the user id is stored as text.
+    expires = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {'sub': str(user_id), 'exp': expires}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_access_token(
     token:str,

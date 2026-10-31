@@ -1,6 +1,6 @@
 import os
 
-# Must be set before app modules are imported (security.py reads it at import)
+# Must be set before app modules are imported (security/tokens.py reads it at import)
 os.environ["SECRET_KEY"] = "test-secret-key-only-for-pytest-0123456789abcdef"
 
 import pytest

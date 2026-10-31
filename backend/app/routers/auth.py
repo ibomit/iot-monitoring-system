@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.auth import CurrentUser
+from app.security.dependencies import CurrentUser, AdminUser
 from app.dependencies import DbSession
 from app.schemas.user import (
     TokenResponse,
-    UserCreate,
+    UserCreateRequest,
     UserResponse,
 )
-from app.security import create_access_token
+from app.security.tokens import create_access_token
 from app.services import user_service
 
 
@@ -24,19 +24,16 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 def register(
-    data: UserCreate,
+    data: UserCreateRequest,
     db: DbSession,
+    admin: AdminUser
 ):
     return user_service.create_user(
         db,
         data,
     )
 
-
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-)
+@router.post("/login",response_model=TokenResponse)
 def login(
     db: DbSession,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -56,14 +53,10 @@ def login(
             },
         )
 
-    access_token = create_access_token(
-        {
-            "sub": user.username,
-        }
-    )
+    token = create_access_token(user.id)
 
     return {
-        "access_token": access_token,
+        "access_token": token,
         "token_type": "bearer",
     }
 

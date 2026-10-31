@@ -2,9 +2,15 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.exceptions import ConflictError
-from app.schemas.user import UserCreate
-from app.security import hash_password, verify_password
+from app.schemas.user import UserCreateRequest
+from app.security.passwords import hash_password, verify_password
 
+
+def get_user_by_id(
+    db: Session,
+    user_id: int,
+):
+    return db.get(models.User, user_id)
 
 def get_user_by_username(
     db: Session,
@@ -30,7 +36,8 @@ def get_user_by_email(
 
 def create_user(
     db: Session,
-    data: UserCreate
+    data: UserCreateRequest,
+    role: str = "user",
 ):
     existing_username = get_user_by_username(
         db,
@@ -51,7 +58,8 @@ def create_user(
         email=data.email,
         password_hash=hash_password(
             data.password
-        )
+        ),
+        role=role,
     )
     db.add(user)
     db.commit()
