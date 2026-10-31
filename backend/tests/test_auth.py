@@ -1,10 +1,14 @@
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
 
+from app import models
+from app.models import utcnow
 from app.schemas.user import UserCreateRequest
 from app.security.dependencies import require_admin
+from app.security.tokens import hash_refresh_token
 from app.services import user_service
 
 USER = {
@@ -162,3 +166,84 @@ def test_require_admin_allows_admin():
     admin = SimpleNamespace(role="admin")
 
     assert require_admin(admin) is admin
+
+
+def refresh(client, token):
+    # Sending the Cookie header explicitly replays a specific (e.g. old) token.
+    return client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={token}"},
+    )
+
+
+def test_login_sets_httponly_refresh_cookie(client, admin_headers):
+    register(client, admin_headers)
+
+    cookie = login(client).headers["set-cookie"].lower()
+
+    assert "refresh_token=" in cookie
+    assert "httponly" in cookie
+    assert "path=/api/auth" in cookie
+    assert "samesite=lax" in cookie
+
+
+def test_refresh_returns_working_access_token(client, admin_headers):
+    register(client, admin_headers)
+    token = login(client).cookies["refresh_token"]
+
+    response = refresh(client, token)
+
+    assert response.status_code == 200
+    access_token = response.json()["access_token"]
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {access_token}"})
+    assert me.json()["username"] == "alice"
+
+
+def test_refresh_rotates_the_token(client, admin_headers):
+    register(client, admin_headers)
+    old_token = login(client).cookies["refresh_token"]
+
+    first = refresh(client, old_token)
+
+    assert first.status_code == 200
+    assert first.cookies["refresh_token"] != old_token
+    assert refresh(client, old_token).status_code == 401
+
+
+def test_refresh_without_cookie_returns_401(client):
+    assert client.post("/api/auth/refresh").status_code == 401
+
+
+def test_refresh_with_unknown_token_returns_401(client):
+    assert refresh(client, "garbage").status_code == 401
+
+
+def test_refresh_with_expired_token_returns_401(client, admin_headers, db):
+    register(client, admin_headers)
+    token = login(client).cookies["refresh_token"]
+    stored = (
+        db.query(models.RefreshToken)
+        .filter(models.RefreshToken.token_hash == hash_refresh_token(token))
+        .one()
+    )
+    stored.expires_at = utcnow() - timedelta(seconds=1)
+    db.commit()
+
+    assert refresh(client, token).status_code == 401
+
+
+def test_logout_revokes_refresh_token(client, admin_headers):
+    register(client, admin_headers)
+    token = login(client).cookies["refresh_token"]
+
+    response = client.post(
+        "/api/auth/logout",
+        headers={"Cookie": f"refresh_token={token}"},
+    )
+
+    assert response.status_code == 204
+    assert refresh(client, token).status_code == 401
+
+
+def test_logout_without_cookie_returns_204(client):
+    assert client.post("/api/auth/logout").status_code == 204
