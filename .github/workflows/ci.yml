@@ -26,6 +26,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg://iot_user:iot_password@localhost:5432/iot_db
+      CORS_ORIGINS: http://localhost:5173
 
     defaults:
       run:
