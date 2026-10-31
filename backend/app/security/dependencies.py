@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.database import get_db
-from app.security import decode_access_token
+from app.security.tokens import decode_access_token
 from app.services import user_service
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -34,14 +34,19 @@ def get_current_user(
 
     payload = decode_access_token(token)
 
-    username = payload.get("sub")
+    subject = payload.get("sub")
 
-    if username is None:
+    if subject is None:
         raise credentials_exception
 
-    user = user_service.get_user_by_username(
+    try:
+        user_id = int(subject)
+    except ValueError:
+        raise credentials_exception
+
+    user = user_service.get_user_by_id(
         db,
-        username,
+        user_id,
     )
 
     if user is None:
@@ -57,7 +62,7 @@ CurrentUser = Annotated[
 def require_admin(
     current_user: CurrentUser,
 ):
-    if current_user.role != "admin": 
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

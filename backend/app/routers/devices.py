@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.auth import AdminUser, CurrentUser
+from app.security.dependencies import AdminUser, CurrentUser
 from app.dependencies import DbSession
 from app.schemas.device import DeviceCreate, DeviceDashboardResponse, DeviceDeleteResponse, DeviceResponse
 from app.schemas.measurement import MeasurementResponse
