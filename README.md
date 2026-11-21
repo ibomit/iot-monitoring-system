@@ -4,7 +4,7 @@
 
 An end-to-end IoT monitoring system. ESP32 devices (or a Python simulator) send sensor measurements over HTTP to a FastAPI backend, which stores them in PostgreSQL and serves a React dashboard.
 
-> **Status:** under active development. Devices, sensors and measurements work end to end, and the dashboard lists devices and their sensors, with the latest values and live graphs over a selectable time range (15 minutes to 30 days). The login screen is still to come (see the Roadmap below).
+> **Status:** under active development. Devices, sensors and measurements work end to end, and the dashboard lists devices and their sensors, with the latest values and live graphs over a selectable time range (15 minutes to 30 days). The dashboard has a login page; the API endpoints are not protected yet (see the Roadmap below).
 
 Built as a personal full-stack and IoT portfolio project.
 
@@ -221,9 +221,11 @@ A device is **online** if a measurement arrived in the last 2 minutes, **offline
 
 ## 🔐 Authentication and Security
 
-Implemented: user registration, login, JWT access tokens, the current-user endpoint, an admin role and argon2 password hashing.
+Implemented: login, short-lived JWT access tokens (kept in memory by the dashboard), refresh tokens in an httpOnly cookie with rotation and logout, the current-user endpoint, an admin role, admin-only user registration and argon2 password hashing. The dashboard has a login page and redirects to it when you are not logged in.
 
-**Current limitation:** during development, the dashboard and device-management endpoints are not protected. The `CurrentUser` and `AdminUser` guards exist but are switched off until the login screen is built, and the device endpoints are public by design. Do not expose the backend to untrusted networks yet. Per-device authentication is on the roadmap.
+Registration is admin-only, so create the first admin from the `backend/` folder with `uv run python -m scripts.create_admin`.
+
+**Current limitation:** during development, the dashboard and device-management endpoints are not protected. The `CurrentUser` and `AdminUser` guards exist but are switched off for now (the login page is built, and enabling them is the next step), and the device endpoints are public by design. Do not expose the backend to untrusted networks yet. Per-device authentication is on the roadmap.
 
 Other safeguards: secrets live in gitignored files, the app refuses to start without a `SECRET_KEY`, and PostgreSQL and Adminer only listen on `localhost`.
 
@@ -338,11 +340,12 @@ iot-monitoring-system/
 - [x] Backend tests, Docker images and CI
 - [x] Device page: latest value of every metric and live graphs of recent measurements for each sensor
 - [x] Time range selection for the charts (15 minutes to 30 days), backed by an averaging endpoint so long ranges are not cut off
+- [x] Login page with refresh tokens, protected dashboard routes, logout, and admin-only registration
 
 **Next**
 
 - [ ] Delete devices from the dashboard (the API endpoint exists)
-- [ ] Login page, then enable the authentication guards and admin-only device management
+- [ ] Enable the authentication guards on the API and admin-only device management
 - [ ] Device authentication and secure device provisioning
 - [ ] Real sensors (DHT22, HC-SR04, PIR)
 
