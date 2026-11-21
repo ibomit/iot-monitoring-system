@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { MapPin, Plus, RefreshCw, Search, Server, Wifi } from 'lucide-react'
-import { createDevice, getDevices, type IDevice } from "../services/api"
+import { createDevice, getDevices } from "../api/api"
+import type { IDevice } from "../api/types"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,

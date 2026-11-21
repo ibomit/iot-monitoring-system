@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Activity, ChevronDown } from 'lucide-react'
-import {
-    getSensorMeasurementBuckets,
-    type IMeasurementBucket,
-    type ISensor,
-} from '../services/api'
+import { getSensorMeasurementBuckets } from '../api/api'
+import type { IMeasurementBucket, ISensor } from '../api/types'
 import { formatUnit, formatValue } from '@/lib/units'
 import { MAX_POINTS, RANGES, type RangeKey } from '@/lib/ranges'
 import './SensorCard.css'
