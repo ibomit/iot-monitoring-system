@@ -1,6 +1,6 @@
 /** Returns the auth state and actions (user, loading, login, logout). Must be used inside <AuthProvider>. */
 
-import {useContext} from "react"
+import { useContext } from "react"
 import { AuthContext } from "@/contexts/auth-context";
 
 export function useAuth() {

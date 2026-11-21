@@ -40,12 +40,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const response = await send()
   if (response.status !== 401) return response
 
-  // The access token has expired (or is missing). Refresh it, but only once:
-  // if a refresh is already running, wait for that one instead of starting another.
-  refreshPromise ??= refreshSession().finally(() => {
-    refreshPromise = null;
-  });
-  const refreshed = await refreshPromise;
+  // The access token has expired (or is missing). refreshSession() shares one
+  // running refresh between all callers, so parallel 401s trigger a single request.
+  const refreshed = await refreshSession();
 
   // Not logged in any more: hand the 401 back to the caller.
   if (!refreshed) return response;
@@ -63,7 +60,7 @@ export async function getDevices(): Promise<IDevice[]> {
   return response.json();
 }
 
-export async function refreshSession(): Promise<boolean> {
+async function requestRefresh(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: "POST",
@@ -81,6 +78,16 @@ export async function refreshSession(): Promise<boolean> {
     accessToken = null;
     return false;
   }
+}
+
+// Every refresh rotates the token, so two requests at once would make the second
+// one fail. If a refresh is already running, everyone waits for that one.
+// Returns false instead of throwing: "not logged in" is a normal state.
+export function refreshSession(): Promise<boolean> {
+  refreshPromise ??= requestRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
 }
 
 export async function logout(): Promise<void> {
