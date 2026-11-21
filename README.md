@@ -300,8 +300,7 @@ iot-monitoring-system/
 │   │   ├── schemas/          # Pydantic request and response models (the API contract)
 │   │   ├── models.py         # SQLAlchemy models
 │   │   ├── exceptions.py     # domain exceptions, mapped to HTTP errors in main.py
-│   │   ├── auth.py           # current-user and admin dependencies
-│   │   ├── security.py       # password hashing and JWT
+│   │   ├── security/         # passwords, access/refresh tokens, current-user and admin dependencies
 │   │   ├── dependencies.py   # shared database-session dependency
 │   │   ├── database.py       # engine and session
 │   │   └── main.py           # FastAPI app, CORS, error handler
@@ -314,7 +313,7 @@ iot-monitoring-system/
 │   │   ├── pages/            # Devices, DeviceDashboard
 │   │   ├── components/       # DeviceCard, SensorCard, sidebar, theme toggle
 │   │   │   └── ui/           # shadcn/ui primitives
-│   │   └── services/api.ts   # all backend calls and API types
+│   │   └── api/              # api.ts (all backend calls), types.ts, helpers.ts
 │   ├── Dockerfile
 │   └── nginx.conf
 ├── firmware/                 # ESP32 (PlatformIO)
