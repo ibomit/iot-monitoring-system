@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Clock, Cpu, MapPin } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import {
-  getDeviceDashboard,
-  type IDeviceDashboard,
-} from '../services/api'
+import { getDeviceDashboard } from '../api/api'
+import type { IDeviceDashboard } from '../api/types'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { RANGE_KEYS, type RangeKey } from '@/lib/ranges'
 

@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronRight, Cpu, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import type { IDevice } from '../services/api'
+import type { IDevice } from '../api/types'
 
 import './DeviceCard.css'
 

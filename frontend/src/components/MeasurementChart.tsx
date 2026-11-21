@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import type { IMeasurement, IMeasurementBucket } from '../services/api'
+import type { IMeasurement, IMeasurementBucket } from '../api/types'
 import { formatMeasurement, formatUnit } from '@/lib/units'
 import { getBucketMs } from '@/lib/ranges'
 import {
